@@ -81,21 +81,7 @@ class ConversationHandler(
         Log.d("TemiGuide", "ConversationHandler: resumed")
     }
 
-    private fun startAsrTimeout() {
-        asrTimeoutJob?.cancel()
-        asrTimeoutJob = activity.lifecycleScope.launch {
-            kotlinx.coroutines.delay(15000)
-            Log.d("TemiGuide", "ASR timeout (15s), returning to Idle")
-            robotController.finishConversation()
-            stateManager.transition(AppState.Idle)
-            activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_IDLE) }
-        }
-    }
 
-    private fun cancelAsrTimeout() {
-        asrTimeoutJob?.cancel()
-        asrTimeoutJob = null
-    }
 
     fun speakAndListen(text: String) {
         if (!isArrivalListening) {
@@ -296,7 +282,7 @@ class ConversationHandler(
         val overrides = builder.buildSystemInstruction(locationsList, currentZone)
         
         conversationHistory.add(Message(role = "user", content = query))
-        cancelAsrTimeout()
+        asrSilenceCheckJob?.cancel()
 
         // 打断逻辑：取消之前的 ReAct 任务并停止 TTS
         currentReActJob?.cancel()
@@ -316,122 +302,92 @@ class ConversationHandler(
                 return@launch
             }
 
-            if (reactEngine != null) {
-                val startTime = System.currentTimeMillis()
-                var reActResult: com.example.temiguide.ai.ReActResult? = null
-                
-                try {
-                    // 思考中フェーズに入る前に「はい」と返事して安心感を与える
-                    ttsProvider?.speak(AppConstants.MSG_ACK, detectedLanguage)
+            val engine = reactEngine ?: run {
+                Log.w("TemiGuide", "ReActEngine not initialized")
+                speakErrorAndReturnToIdle()
+                return@launch
+            }
 
-                    val languageHint = when (detectedLanguage) {
-                        "zh-CN", "zh-TW" -> "\n[ユーザーは中国語を話しています。中国語（簡体字）で返答してください]"
-                        "en-US" -> "\n[The user is speaking English. Please respond in English]"
-                        else -> ""
-                    }
-                    val enhancedInput = query + languageHint
-                    val customerContext = faceManager?.getContextForAI() ?: ""
+            val startTime = System.currentTimeMillis()
+            var reActResult: com.example.temiguide.ai.ReActResult? = null
+            
+            try {
+                // 思考中フェーズに入る前に「はい」と返事して安心感を与える
+                ttsProvider?.speak(AppConstants.MSG_ACK, detectedLanguage)
 
-                    val result = withTimeoutOrNull(AppConstants.REACT_TOTAL_TIMEOUT_MS) {
-                        reactEngine!!.run(enhancedInput, overrides, customerContext)
-                    }
-                    reActResult = result
-
-                    if (result == null) {
-                        com.example.temiguide.utils.DevLog.add("REACT_TIMEOUT", "ReAct loop timed out (30_000ms)")
-                        activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_IDLE) }
-                        speakErrorAndRetry()
-                        return@launch
-                    }
-
-                    ActionLogger.logAction(activity, query, result.text, null, "ReActResponse", "Iterations: ${result.iterationCount}")
-
-                    if (!result.text.isBlank() && !result.waitingForUser) {
-                        stateManager.transition(AppState.Speaking(result.text))
-                        ttsProvider?.speakInChunks(result.text, detectedLanguage)
-                    }
-
-                    // AI 応答後、リスニング状態へ移行して次の発話を待つ（Loop Pattern）
-                    Log.d("TemiGuide", "AI response spoken, transitioning to Listening for next input")
-                    stateManager.transition(AppState.Listening())
-                    activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_LISTENING) }
-                    
-                    // 15秒の音声を待ち受け、何もなければ Idle へ
-                    startAsrTimeout()
-
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    Log.d("TemiGuide", "ReAct job cancelled by new input")
-                } catch (e: Exception) {
-                    Log.e("TemiGuide", "Error during ReAct process: ${e.message}", e)
-                    ActionLogger.logAction(activity, query, "", null, "error", "ReAct Error ${e.message}")
-                    speakErrorAndReturnToIdle()
-                } finally {
-                    val latency = System.currentTimeMillis() - startTime
-                    activity.lifecycleScope.launch(Dispatchers.IO) {
-                        try {
-                            database.interactionLogDao().insert(
-                                InteractionLog(
-                                    userInput = query,
-                                    aiResponse = reActResult?.text,
-                                    toolsExecuted = reActResult?.executedTools?.joinToString(","),
-                                    latencyMs = latency,
-                                    success = reActResult != null,
-                                    errorMessage = if (reActResult == null) "timeout" else null
-                                )
-                            )
-                        } catch (logEx: Exception) {
-                            Log.e("TemiGuide", "Failed to save interaction log", logEx)
-                        }
-                    }
+                val languageHint = when (detectedLanguage) {
+                    "zh-CN", "zh-TW" -> "\n[ユーザーは中国語を话しています。中国語（簡体字）で返答してください]"
+                    "en-US" -> "\n[The user is speaking English. Please respond in English]"
+                    else -> ""
                 }
-            } else {
-                // === 原有逻辑完全保留 ===
-                try {
-                    // Call AiProvider instead of GeminiApiClient directly
-                val response = kotlinx.coroutines.withTimeoutOrNull(15_000L) {
-                    aiProvider.chatWithFunctions(
-                        userText = query,
-                        functions = emptyList(), // Use default functions for now
-                        conversationHistory = conversationHistory,
-                        systemPromptOverride = overrides
-                    )
+                val enhancedInput = query + languageHint
+                val customerContext = faceManager?.getContextForAI() ?: ""
+
+                val result = withTimeoutOrNull(AppConstants.REACT_TOTAL_TIMEOUT_MS) {
+                    engine.run(enhancedInput, overrides, customerContext)
                 }
-                
-                if (response == null) {
-                    com.example.temiguide.utils.DevLog.add("AI_TIMEOUT", "AI 応答タイムアウト (15_000ms)")
+                reActResult = result
+
+                if (result == null) {
+                    com.example.temiguide.utils.DevLog.add("REACT_TIMEOUT", "ReAct loop timed out (30_000ms)")
                     activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_IDLE) }
                     speakErrorAndRetry()
                     return@launch
                 }
 
-                if (response.text.isBlank() && response.actions.isEmpty()) {
-                    com.example.temiguide.utils.DevLog.add("AI_WARN", "AI returned empty response for: $query")
-                    speakErrorAndRetry()
-                    return@launch
+                ActionLogger.logAction(activity, query, result.text, null, "ReActResponse", "Iterations: ${result.iterationCount}")
+
+                if (!result.text.isBlank() && !result.waitingForUser) {
+                    stateManager.transition(AppState.Speaking(result.text))
+                    
+                    // AI 応答後、TTS が全部終わったら wakeup で ASR を再起動
+                    if (ttsProvider is com.example.temiguide.voice.temi.TemiTtsProvider) {
+                        ttsProvider.onAllSpeechComplete = {
+                            val state = stateManager.getCurrentState()
+                            if (state is AppState.Listening || state is AppState.Speaking) {
+                                Log.d("TemiGuide", "All TTS chunks complete, calling wakeup()")
+                                robotController.robot.wakeup()
+                            }
+                            ttsProvider.onAllSpeechComplete = null  // 一次性回调
+                        }
+                    }
+                    
+                    ttsProvider?.speakInChunks(result.text, detectedLanguage)
                 }
 
-                if (response.error != null) {
-                    com.example.temiguide.utils.DevLog.add("AI_ERROR", response.error)
-                    speakErrorAndRetry()
-                    return@launch
-                }
+                // AI 応答後、リスニング状態へ移行して次の発話を待つ（Loop Pattern）
+                Log.d("TemiGuide", "AI response spoken, transitioning to Listening for next input")
+                stateManager.transition(AppState.Listening())
+                activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_LISTENING) }
                 
-                // Add assistant response to history
-                conversationHistory.add(Message(role = "model", content = response.rawResponse))
-                
-                ActionLogger.logAction(activity, query, response.text, null, "AiResponse", "Success")
+                // 15秒の音声を待ち受け、何もなければ Idle へ
+                startAsrTimeout()
 
-                // Pass to dialog action handler
-                dialogActionHandler.executeAction(response, conversationHistory as MutableList<Any>) { pendingAutoListen = false }
-                
             } catch (e: kotlinx.coroutines.CancellationException) {
-                Log.d("TemiGuide", "AI job cancelled by new input")
+                Log.d("TemiGuide", "ReAct job cancelled by new input")
             } catch (e: Exception) {
-                Log.e("TemiGuide", "Error during AI process: ${e.message}", e)
-                ActionLogger.logAction(activity, query, "", null, "error", "API Error ${e.message}")
+                Log.e("TemiGuide", "Error during ReAct process: ${e.message}", e)
+                ActionLogger.logAction(activity, query, "", null, "error", "ReAct Error ${e.message}")
                 speakErrorAndReturnToIdle()
+            } finally {
+                val latency = System.currentTimeMillis() - startTime
+                activity.lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        database.interactionLogDao().insert(
+                            InteractionLog(
+                                userInput = query,
+                                aiResponse = reActResult?.text,
+                                toolsExecuted = reActResult?.executedTools?.joinToString(","),
+                                latencyMs = latency,
+                                success = reActResult != null,
+                                errorMessage = if (reActResult == null) "timeout" else null
+                            )
+                        )
+                    } catch (logEx: Exception) {
+                        Log.e("TemiGuide", "Failed to save interaction log", logEx)
+                    }
+                }
             }
-            } // end else
         }
     }
 

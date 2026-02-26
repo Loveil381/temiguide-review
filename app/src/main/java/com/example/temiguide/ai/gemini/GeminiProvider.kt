@@ -17,10 +17,7 @@ import com.google.firebase.ai.type.content
 import com.example.temiguide.ai.tools.ToolRegistry
 // import com.google.firebase.ai.type.ThinkingLevel
 // import com.google.firebase.ai.type.thinkingConfig
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.jsonObject
+
 
 /**
  * Firebase AI Logic を使用する AiProvider 実装。
@@ -111,7 +108,8 @@ class GeminiProvider : AiProvider {
             val systemInstruction = systemPromptOverride ?: buildSystemInstruction()
 
             val tools = if (functions.isEmpty()) {
-                listOf(Tool.functionDeclarations(toolRegistry?.toFunctionDeclarations() ?: buildDefaultFunctionDeclarations()))
+                val registered = toolRegistry?.toFunctionDeclarations() ?: emptyList()
+                if (registered.isNotEmpty()) listOf(Tool.functionDeclarations(registered)) else emptyList()
             } else {
                 listOf(Tool.functionDeclarations(functions.map { it.toFirebaseFunctionDeclaration() }))
             }
@@ -136,7 +134,11 @@ class GeminiProvider : AiProvider {
             val chat = model.startChat(history)
             val response = chat.sendMessage(userText)
 
-            parseResponse(response)
+            AiResponse(
+                text = response.text ?: "",
+                actions = emptyList(),
+                rawResponse = response.text ?: ""
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Gemini API Error", e)
             AiResponse(text = "", actions = emptyList(), error = e.message ?: "Unknown error")
@@ -156,7 +158,7 @@ class GeminiProvider : AiProvider {
             val modelName = AppConfig.modelName.ifBlank { "gemini-3-flash-preview" }
             val systemInstruction = systemPromptOverride ?: buildSystemInstruction()
 
-            val toolDeclarations = toolRegistry?.toFunctionDeclarations() ?: buildDefaultFunctionDeclarations()
+            val toolDeclarations = toolRegistry?.toFunctionDeclarations() ?: emptyList()
             val toolsConfig = if (toolDeclarations.isNotEmpty()) {
                 listOf(Tool.functionDeclarations(toolDeclarations))
             } else {
@@ -188,7 +190,7 @@ class GeminiProvider : AiProvider {
                             primitive.content
                         } else {
                             primitive.content.toBooleanStrictOrNull() 
-                                ?: primitive.intOrNull 
+                                ?: primitive.content.toIntOrNull() 
                                 ?: primitive.content.toDoubleOrNull() 
                                 ?: primitive.content
                         }
@@ -235,240 +237,7 @@ class GeminiProvider : AiProvider {
         }
     }
 
-    private fun parseResponse(response: com.google.firebase.ai.type.GenerateContentResponse): AiResponse {
-        val functionCalls = response.functionCalls
-        val actions = mutableListOf<TemiAction>()
-        var mainReply = response.text ?: ""
 
-        if (functionCalls.isNotEmpty()) {
-            for (call in functionCalls) {
-                val args = call.args
-                val callActions = parseFunctionCall(call.name, args)
-                actions.addAll(callActions)
-                
-                if (mainReply.isBlank() && callActions.isNotEmpty()) {
-                    mainReply = extractTextFromAction(callActions.first()) ?: ""
-                }
-            }
-        } else if (mainReply.isNotBlank()) {
-            actions.add(TemiAction.Speak(mainReply))
-        }
-
-        if (mainReply.isBlank() && actions.isNotEmpty()) {
-            mainReply = actions.firstNotNullOfOrNull { extractTextFromAction(it) } ?: "ご案内します"
-        }
-
-        return AiResponse(
-            text = mainReply,
-            actions = actions,
-            confidence = 1.0f,
-            rawResponse = response.text ?: "Function calls executed",
-            provider = providerName
-        )
-    }
-
-    private fun parseFunctionCall(name: String, args: Map<String, JsonElement>): List<TemiAction> {
-        return try {
-            when (name) {
-                "navigate_to" -> {
-                    val location = args["location"]?.jsonPrimitive?.content ?: return emptyList()
-                    val announcement = args["announcement"]?.jsonPrimitive?.content
-                    listOf(TemiAction.Navigate(location, announcement))
-                }
-                "navigate_queue" -> parseNavigateQueue(args)
-                "speak" -> {
-                    val text = args["text"]?.jsonPrimitive?.content ?: return emptyList()
-                    listOf(TemiAction.Speak(text))
-                }
-                "ask_followup" -> {
-                    val question = args["question"]?.jsonPrimitive?.content ?: return emptyList()
-                    listOf(TemiAction.AskQuestion(question))
-                }
-                "call_staff" -> {
-                    val reason = args["reason"]?.jsonPrimitive?.content ?: "スタッフ呼び出し"
-                    listOf(TemiAction.CallStaff(reason))
-                }
-                "end_conversation" -> {
-                    val reply = args["reply"]?.jsonPrimitive?.content ?: ""
-                    listOf(TemiAction.EndConversation(reply))
-                }
-                "pause_robot" -> {
-                    val message = args["message"]?.jsonPrimitive?.content ?: ""
-                    listOf(TemiAction.Pause(message))
-                }
-                "wait_seconds" -> {
-                    val seconds = args["seconds"]?.jsonPrimitive?.intOrNull ?: 3
-                    listOf(TemiAction.Wait(seconds))
-                }
-                "move_to_zone" -> {
-                    val location = args["location"]?.jsonPrimitive?.content ?: return emptyList()
-                    listOf(TemiAction.MoveToZone(location))
-                }
-                "save_memory" -> {
-                    val key = args["key"]?.jsonPrimitive?.content ?: return emptyList()
-                    val value = args["value"]?.jsonPrimitive?.content ?: return emptyList()
-                    listOf(TemiAction.SaveMemory(key, value))
-                }
-                "turn_by" -> {
-                    val degrees = args["degrees"]?.jsonPrimitive?.intOrNull ?: return emptyList()
-                    val speed = args["speed"]?.jsonPrimitive?.content?.toFloatOrNull() ?: 1.0f
-                    listOf(TemiAction.TurnBy(degrees, speed))
-                }
-                "tilt_head" -> {
-                    val angle = args["angle"]?.jsonPrimitive?.intOrNull ?: return emptyList()
-                    listOf(TemiAction.TiltHead(angle))
-                }
-                "go_home" -> {
-                    listOf(TemiAction.GoHome)
-                }
-                else -> {
-                    Log.w(TAG, "Unknown function call: $name")
-                    emptyList()
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse function call: $name", e)
-            emptyList()
-        }
-    }
-
-    private fun parseNavigateQueue(args: Map<String, JsonElement>): List<TemiAction> {
-        val actions = mutableListOf<TemiAction>()
-        try {
-            val locationsElement = args["locations"] ?: return emptyList()
-            val locationsArray = if (locationsElement is kotlinx.serialization.json.JsonArray) {
-                locationsElement 
-            } else if (locationsElement is kotlinx.serialization.json.JsonPrimitive && locationsElement.isString) {
-                kotlinx.serialization.json.Json.parseToJsonElement(locationsElement.content) as? kotlinx.serialization.json.JsonArray
-            } else {
-                null
-            } ?: return emptyList()
-
-            for (element in locationsArray) {
-                val obj = element.jsonObject
-                val location = obj["location"]?.jsonPrimitive?.content ?: continue
-                val announcement = obj["announcement"]?.jsonPrimitive?.content
-                actions.add(TemiAction.Navigate(location, announcement))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse navigate_queue", e)
-        }
-        return actions
-    }
-
-    private fun extractTextFromAction(action: TemiAction): String? = when (action) {
-        is TemiAction.Speak -> action.text
-        is TemiAction.Navigate -> action.announcement
-        is TemiAction.EndConversation -> action.reply
-        is TemiAction.Pause -> action.message
-        is TemiAction.AskQuestion -> action.text
-        else -> null
-    }
-
-    // ==================== Default Function Declarations ====================
-
-    private fun buildDefaultFunctionDeclarations(): List<FunctionDeclaration> = listOf(
-        FunctionDeclaration(
-            name = "move_to_zone",
-            description = "Move voluntarily to a specific zone.",
-            parameters = mapOf(
-                "location" to Schema.string("Zone name")
-            )
-        ),
-        FunctionDeclaration(
-            name = "save_memory",
-            description = "Save long-term memory about the user.",
-            parameters = mapOf(
-                "key" to Schema.string("Memory key"),
-                "value" to Schema.string("Memory value")
-            )
-        ),
-        FunctionDeclaration(
-            name = "navigate_to",
-            description = "Guide the user to a specific location in the store.",
-            parameters = mapOf(
-                "location" to Schema.string("Location name"),
-                "announcement" to Schema.string("Announcement upon arrival")
-            )
-        ),
-        FunctionDeclaration(
-            name = "navigate_queue",
-            description = "Guide the user to multiple locations in order.",
-            parameters = mapOf(
-                "locations" to Schema.array(
-                    Schema.obj(
-                        mapOf(
-                            "location" to Schema.string("Location name"),
-                            "announcement" to Schema.string("Announcement upon arrival")
-                        )
-                    )
-                )
-            )
-        ),
-        FunctionDeclaration(
-            name = "speak",
-            description = "Speak a purely conversational message to the user.",
-            parameters = mapOf(
-                "text" to Schema.string("The message to speak")
-            )
-        ),
-        FunctionDeclaration(
-            name = "ask_followup",
-            description = "Ask the user a question to clarify.",
-            parameters = mapOf(
-                "question" to Schema.string("The question to ask")
-            )
-        ),
-        FunctionDeclaration(
-            name = "call_staff",
-            description = "Call a human staff member.",
-            parameters = mapOf(
-                "reason" to Schema.string("Reason for calling staff")
-            )
-        ),
-        FunctionDeclaration(
-            name = "end_conversation",
-            description = "End the conversation.",
-            parameters = mapOf(
-                "reply" to Schema.string("Final reply before ending")
-            )
-        ),
-        FunctionDeclaration(
-            name = "pause_robot",
-            description = "Pause the robot and wait.",
-            parameters = mapOf(
-                "message" to Schema.string("Message to speak while pausing")
-            )
-        ),
-        FunctionDeclaration(
-            name = "wait_seconds",
-            description = "Wait for a number of seconds.",
-            parameters = mapOf(
-                "seconds" to Schema.integer("Seconds to wait")
-            )
-        ),
-        FunctionDeclaration(
-            name = "turn_by",
-            description = "Turn the robot by specified degrees. Positive = clockwise, Negative = counter-clockwise.",
-            parameters = mapOf(
-                "degrees" to Schema.integer("Degrees to turn (-360 to 360)"),
-                "speed" to Schema.double("Turn speed from 0.0 to 1.0")
-            ),
-            optionalParameters = listOf("speed")
-        ),
-        FunctionDeclaration(
-            name = "tilt_head",
-            description = "Tilt the robot's head. -30 = look down, 0 = forward, +50 = look up.",
-            parameters = mapOf(
-                "angle" to Schema.integer("Tilt angle from -30 to 50")
-            )
-        ),
-        FunctionDeclaration(
-            name = "go_home",
-            description = "Return the robot to home base immediately.",
-            parameters = mapOf<String, Schema>()
-        )
-    )
 }
 
 // ==================== FunctionSpec → Firebase AI 変換 ====================

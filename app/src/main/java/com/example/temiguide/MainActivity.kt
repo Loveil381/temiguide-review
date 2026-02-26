@@ -19,7 +19,7 @@ import com.robotemi.sdk.listeners.OnRobotReadyListener
 import com.robotemi.sdk.listeners.OnDetectionStateChangedListener
 import com.robotemi.sdk.listeners.OnMovementStatusChangedListener
 import com.robotemi.sdk.listeners.OnConversationStatusChangedListener
-import com.robotemi.sdk.listeners.OnTtsStatusChangedListener
+
 import com.robotemi.sdk.sequence.OnSequencePlayStatusChangedListener
 import com.robotemi.sdk.face.OnFaceRecognizedListener
 import com.robotemi.sdk.face.ContactModel
@@ -68,8 +68,7 @@ class MainActivity : AppCompatActivity(),
     OnMovementStatusChangedListener,
     OnConversationStatusChangedListener,
     OnSequencePlayStatusChangedListener,
-    OnFaceRecognizedListener,
-    OnTtsStatusChangedListener {
+    OnFaceRecognizedListener {
 
     private lateinit var robot: Robot
     private lateinit var robotController: RobotController
@@ -440,7 +439,7 @@ class MainActivity : AppCompatActivity(),
         robot.addOnConversationStatusChangedListener(this)
         robot.addOnSequencePlayStatusChangedListener(this)
         robot.addOnFaceRecognizedListener(this)
-        robot.addTtsListener(this)
+
     }
 
     override fun onStop() {
@@ -454,7 +453,7 @@ class MainActivity : AppCompatActivity(),
         robot.removeOnConversationStatusChangedListener(this)
         robot.removeOnSequencePlayStatusChangedListener(this)
         robot.removeOnFaceRecognizedListener(this)
-        robot.removeTtsListener(this)
+
         screenManager.stopClockUpdates()
         clearActionRunnables()
         watchdogRunnable?.let { handler.removeCallbacks(it) }
@@ -524,15 +523,35 @@ class MainActivity : AppCompatActivity(),
     override fun onConversationStatusChanged(status: Int, text: String) {
         Log.d("TemiGuide", "ConversationStatus: status=$status, text=$text")
         
-        patrolManager.stopPatrol()
-        
-        // Bug A: ナビゲーション中・到着処理中は temi の自発的な会話割り込みを無視する
+        // 巡逻中有人说话，停止巡逻
+        if (status == 1 || status == 2) {
+            patrolManager.stopPatrol()
+        }
+
+        // 导航中或到达状态时，忽略对话事件
         val currentState = stateManager.state.value
         if (currentState is AppState.Navigating || currentState is AppState.Arrival) {
-            com.example.temiguide.utils.DevLog.add("ConvGuard", "Ignoring conversation status=$status ($text) during $currentState")
             Log.d("TemiGuide", "Ignoring conversation during ${currentState.javaClass.simpleName}, status=$status")
-            robot.finishConversation()  // temi の会話 UI を強制終了
+            robot.finishConversation()
             return
+        }
+
+        when (status) {
+            1 -> {
+                // ASR 开始监听
+                Log.d("TemiGuide", "ASR listening started")
+            }
+            2 -> {
+                // ASR 结果返回（来自 robot.wakeup() 触发的对话）
+                Log.d("TemiGuide", "ASR result from wakeup: $text")
+                if (text.isNotBlank()) {
+                    conversationHandler.onAsrResult(text)
+                }
+            }
+            0 -> {
+                // 对话结束
+                Log.d("TemiGuide", "Conversation finished")
+            }
         }
     }
 
@@ -563,25 +582,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onTtsStatusChanged(ttsRequest: TtsRequest) {
-        Log.d("TemiGuide", "TTS status: ${ttsRequest.status}, speech: ${ttsRequest.speech}")
-        when (ttsRequest.status) {
-            TtsRequest.Status.COMPLETED -> {
-                // TTS 播完后，如果当前状态是 Speaking 或 Listening，重新唤醒 ASR
-                val currentState = stateManager.getCurrentState()
-                if (currentState is AppState.Speaking || currentState is AppState.Listening) {
-                    Log.d("TemiGuide", "TTS completed, calling wakeup() to restart ASR")
-                    robot.wakeup()
-                }
-            }
-            TtsRequest.Status.STARTED -> {
-                Log.d("TemiGuide", "TTS started speaking")
-            }
-            TtsRequest.Status.ERROR -> {
-                Log.e("TemiGuide", "TTS error")
-            }
-            else -> {}
-        }
-    }
+
 }
 

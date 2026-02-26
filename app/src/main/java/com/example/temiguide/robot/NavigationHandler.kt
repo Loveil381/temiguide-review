@@ -8,7 +8,7 @@ import com.example.temiguide.ui.ScreenManager
 import java.util.Locale
 import com.example.temiguide.core.StateManager
 import com.example.temiguide.core.AppState
-import com.example.temiguide.core.AppEvent
+
 import com.example.temiguide.core.AppConstants
 import com.example.temiguide.ai.tools.impl.NavigationAwaiter
 

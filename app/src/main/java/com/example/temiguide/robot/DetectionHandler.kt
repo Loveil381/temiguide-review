@@ -9,8 +9,7 @@ import com.example.temiguide.R
 import com.example.temiguide.ui.ScreenManager
 import com.example.temiguide.core.StateManager
 import com.example.temiguide.core.AppState
-import com.example.temiguide.core.EventBus
-import com.example.temiguide.core.AppEvent
+
 
 class DetectionHandler(
     private val activity: MainActivity,

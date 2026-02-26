@@ -12,6 +12,7 @@ import kotlin.coroutines.resume
 class TemiTtsProvider(private val robotController: RobotController) : TtsProvider, Robot.TtsListener {
     private var _isSpeaking = false
     private var pendingContinuations = mutableMapOf<String, CancellableContinuation<Boolean>>()
+    var onAllSpeechComplete: (() -> Unit)? = null
 
     init {
         robotController.robot.addTtsListener(this)
@@ -102,7 +103,10 @@ class TemiTtsProvider(private val robotController: RobotController) : TtsProvide
         
         when (ttsRequest.status) {
             TtsRequest.Status.COMPLETED -> {
-                if (pendingContinuations.isEmpty()) _isSpeaking = false
+                if (pendingContinuations.isEmpty()) {
+                    _isSpeaking = false
+                    onAllSpeechComplete?.invoke()
+                }
                 if (cont != null && cont.isActive) {
                     cont.resume(true)
                 }

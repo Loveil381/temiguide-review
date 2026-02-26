@@ -3,9 +3,7 @@ package com.example.temiguide.ai
 import com.example.temiguide.core.AiProviderType
 import com.example.temiguide.core.AppConfig
 import com.example.temiguide.ai.gemini.GeminiProvider
-import com.example.temiguide.ai.openai.OpenAiProvider
-import com.example.temiguide.ai.deepseek.DeepSeekProvider
-import com.example.temiguide.ai.local.LocalProvider
+
 
 /**
  * AppConfig.aiProvider の設定に基づいて適切な AiProvider を返すファクトリ。
@@ -23,9 +21,6 @@ object AiProviderFactory {
      */
     fun init() {
         providers[AiProviderType.GEMINI] = GeminiProvider()
-        providers[AiProviderType.OPENAI] = OpenAiProvider()
-        providers[AiProviderType.DEEPSEEK] = DeepSeekProvider()
-        providers[AiProviderType.LOCAL] = LocalProvider()
     }
 
     /**
@@ -35,8 +30,12 @@ object AiProviderFactory {
      */
     fun getProvider(): AiProvider {
         val type = AppConfig.aiProvider
-        return providers[type]
-            ?: throw IllegalStateException("Unknown AI provider: $type")
+        return when (type) {
+            AiProviderType.GEMINI -> providers[type] ?: throw IllegalStateException("Gemini provider not initialized")
+            AiProviderType.OPENAI -> throw UnsupportedOperationException("OpenAI provider not implemented")
+            AiProviderType.DEEPSEEK -> throw UnsupportedOperationException("DeepSeek provider not implemented")
+            AiProviderType.LOCAL -> throw UnsupportedOperationException("Local provider not implemented")
+        }
     }
 
     /**
@@ -46,8 +45,12 @@ object AiProviderFactory {
      * @throws IllegalStateException 未知のプロバイダ種別の場合
      */
     fun getProvider(type: AiProviderType): AiProvider {
-        return providers[type]
-            ?: throw IllegalStateException("Unknown AI provider: $type")
+        return when (type) {
+            AiProviderType.GEMINI -> providers[type] ?: throw IllegalStateException("Gemini provider not initialized")
+            AiProviderType.OPENAI -> throw UnsupportedOperationException("OpenAI provider not implemented")
+            AiProviderType.DEEPSEEK -> throw UnsupportedOperationException("DeepSeek provider not implemented")
+            AiProviderType.LOCAL -> throw UnsupportedOperationException("Local provider not implemented")
+        }
     }
 
     /**
