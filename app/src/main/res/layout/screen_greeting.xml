@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/screenGreeting"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_white"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="48dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:alpha="0.6">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_myplaces"
+                android:contentDescription="ボット"
+                app:tint="@color/brand_primary" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="@string/assistant_active"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05"
+                android:textAllCaps="true"
+                android:textColor="@color/text_main" />
+            <TextView
+                android:id="@+id/tvGreetingClock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textColor="@color/text_main" />
+        </LinearLayout>
+
+        <!-- Center: Greeting -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/greeting_ja"
+                android:textColor="@color/text_main"
+                android:textSize="80sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="48dp"
+                android:text="@string/greeting_en"
+                android:textColor="@color/brand_primary"
+                android:textSize="48sp"
+                android:textStyle="bold" />
+
+            <!-- Sound wave bars -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="80dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <View android:id="@+id/waveBar1" android:layout_width="8dp" android:layout_height="16dp" android:layout_margin="4dp" android:background="@color/brand_primary_20" />
+                <View android:id="@+id/waveBar2" android:layout_width="8dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="@color/brand_primary_40" />
+                <View android:id="@+id/waveBar3" android:layout_width="8dp" android:layout_height="24dp" android:layout_margin="4dp" android:background="@color/brand_primary_40" />
+                <View android:id="@+id/waveBar4" android:layout_width="8dp" android:layout_height="48dp" android:layout_margin="4dp" android:background="@color/brand_primary_60" />
+                <View android:id="@+id/waveBar5" android:layout_width="8dp" android:layout_height="56dp" android:layout_margin="4dp" android:background="@color/brand_primary_80" />
+                <View android:id="@+id/waveBar6" android:layout_width="8dp" android:layout_height="40dp" android:layout_margin="4dp" android:background="@color/brand_primary" />
+                <View android:id="@+id/waveBar7" android:layout_width="8dp" android:layout_height="72dp" android:layout_margin="4dp" android:background="@color/brand_primary" />
+                <View android:id="@+id/waveBar8" android:layout_width="8dp" android:layout_height="48dp" android:layout_margin="4dp" android:background="@color/brand_primary" />
+                <View android:id="@+id/waveBar9" android:layout_width="8dp" android:layout_height="64dp" android:layout_margin="4dp" android:background="@color/brand_primary_80" />
+                <View android:id="@+id/waveBar10" android:layout_width="8dp" android:layout_height="40dp" android:layout_margin="4dp" android:background="@color/brand_primary_60" />
+                <View android:id="@+id/waveBar11" android:layout_width="8dp" android:layout_height="24dp" android:layout_margin="4dp" android:background="@color/brand_primary_40" />
+                <View android:id="@+id/waveBar12" android:layout_width="8dp" android:layout_height="16dp" android:layout_margin="4dp" android:background="@color/brand_primary_20" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:contentDescription="マイク"
+                    app:tint="@color/brand_primary" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/listening_status"
+                    android:textColor="@color/text_light_gray"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

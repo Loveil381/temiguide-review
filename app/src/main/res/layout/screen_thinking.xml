@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/screenThinking"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_light"
+    android:visibility="gone">
+
+    <!-- Ripple ring outer -->
+    <View
+        android:id="@+id/thinkingRipple1"
+        android:layout_width="256dp"
+        android:layout_height="256dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_primary_circle_ripple"
+        android:alpha="0.3" />
+
+    <!-- Ripple ring delayed -->
+    <View
+        android:id="@+id/thinkingRipple2"
+        android:layout_width="256dp"
+        android:layout_height="256dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_primary_circle_faint"
+        android:alpha="0.2" />
+
+    <!-- Soft halo -->
+    <View
+        android:id="@+id/thinkingHalo"
+        android:layout_width="192dp"
+        android:layout_height="192dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_primary_circle_ripple"
+        android:alpha="0.4" />
+
+    <!-- Core breathing circle -->
+    <View
+        android:id="@+id/thinkingCore"
+        android:layout_width="128dp"
+        android:layout_height="128dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_primary_circle"
+        android:elevation="8dp" />
+</FrameLayout>

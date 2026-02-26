@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Landscape Guidance Start Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec1325",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221012",
+                        "text-main": "#181112",
+                        "text-muted": "#896165",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "2xl": "2rem",
+                        "3xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom styles to ensure 16:9 aspect ratio feel on any viewport */
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling on kiosk mode */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased h-screen w-screen flex flex-col overflow-hidden">
+<!-- Main Content Container (Full Screen Landscape) -->
+<main class="flex flex-row flex-1 w-full h-full relative overflow-hidden">
+<!-- Left Split: Interaction & Message -->
+<section class="w-1/2 flex flex-col items-center justify-center p-12 lg:p-16 relative bg-white dark:bg-zinc-900 border-r border-gray-100 dark:border-zinc-800">
+<!-- Decorative Background Element -->
+<div class="absolute top-0 left-0 w-full h-full opacity-[0.03] bg-[radial-gradient(#ec1325_1px,transparent_1px)] [background-size:24px_24px]"></div>
+<div class="z-10 w-full max-w-lg flex flex-col gap-8">
+<!-- Robot Avatar / Icon -->
+<div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-bounce">
+<span class="material-symbols-outlined text-primary text-[48px]">smart_toy</span>
+</div>
+<!-- Text Card -->
+<div class="flex flex-col gap-6">
+<h1 class="text-text-main dark:text-white text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+                        I can help<br/>with that!
+                    </h1>
+<div class="h-2 w-24 bg-primary rounded-full"></div>
+<p class="text-text-muted dark:text-gray-400 text-2xl lg:text-3xl font-medium leading-relaxed">
+                        Please follow me to the men's section.
+                    </p>
+</div>
+</div>
+<!-- Bottom Indicator for Robot State -->
+<div class="absolute bottom-12 left-12 flex items-center gap-3">
+<div class="flex space-x-1">
+<span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+<span class="w-3 h-3 bg-green-500 rounded-full animate-pulse delay-75"></span>
+<span class="w-3 h-3 bg-green-500 rounded-full animate-pulse delay-150"></span>
+</div>
+<span class="text-sm font-bold text-gray-400 uppercase tracking-widest">Robot Active</span>
+</div>
+</section>
+<!-- Right Split: Navigation & Destination -->
+<section class="w-1/2 bg-primary flex flex-col relative overflow-hidden">
+<!-- Dynamic Background Pattern -->
+<div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, #000 20px, #000 22px);">
+</div>
+<!-- Destination Content -->
+<div class="flex-1 flex flex-col items-center justify-center text-center p-12 z-10">
+<div class="flex flex-col items-center gap-2 mb-12">
+<span class="text-white/80 text-lg font-bold tracking-[0.2em] uppercase">Destination</span>
+<h2 class="text-white text-6xl lg:text-8xl font-black uppercase tracking-tight leading-none drop-shadow-sm">
+                        MENS<br/>HEATTECH
+                    </h2>
+</div>
+<!-- Massive Directional Arrow -->
+<div class="bg-white text-primary rounded-full w-48 h-48 lg:w-64 lg:h-64 flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] transform transition-transform hover:scale-105">
+<span class="material-symbols-outlined text-[120px] lg:text-[160px] font-bold">arrow_forward</span>
+</div>
+<p class="mt-12 text-white/90 text-xl font-bold tracking-wide animate-pulse">
+                    MOVING FORWARD
+                </p>
+</div>
+<!-- Decorative Floor Line -->
+<div class="h-4 bg-black/20 w-full absolute bottom-0"></div>
+</section>
+</main>
+<!-- Global Status Bar (Overlay) -->
+<header class="absolute top-0 left-0 w-full px-8 py-6 flex justify-between items-start pointer-events-none z-50">
+<!-- Logo Area -->
+<div class="bg-primary text-white font-bold text-xl px-4 py-2 pointer-events-auto shadow-lg rounded-sm">
+            UNIQLO BOT
+        </div>
+<!-- Top Right Controls -->
+<div class="flex gap-4 pointer-events-auto">
+<button class="bg-white/90 backdrop-blur-sm hover:bg-white text-text-main p-3 rounded-full shadow-md flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">volume_up</span>
+</button>
+<button class="bg-white/90 backdrop-blur-sm hover:bg-white text-text-main p-3 rounded-full shadow-md flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="bg-white/90 backdrop-blur-sm hover:bg-white text-text-main p-3 rounded-full shadow-md flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</header>
+</body></html>

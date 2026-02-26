@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/screenArrival"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_white"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:padding="32dp">
+            <FrameLayout
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_logo_icon">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="S"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="@string/brand_name"
+                android:textColor="@color/text_main"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/btnDone"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_badge_neutral"
+                android:gravity="center"
+                android:paddingHorizontal="20dp"
+                android:text="@string/arrival_done"
+                android:textColor="@color/brand_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Center content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="48dp">
+
+            <!-- Green check icon -->
+            <FrameLayout
+                android:id="@+id/viewArrivalCheck"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_green_circle">
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_menu_mylocation"
+                    android:contentDescription="到着"
+                    app:tint="@color/green_accent" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvArrivalTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/arrival_title"
+                android:textColor="@color/text_main"
+                android:textSize="48sp"
+                android:textStyle="bold" />
+
+            <!-- Info card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:background="@drawable/bg_arrival_card"
+                android:elevation="4dp"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <!-- Text content -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:orientation="vertical"
+                    android:padding="28dp">
+
+                    <TextView
+                        android:id="@+id/tvArrivalSection"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_badge_primary"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp"
+                        android:textColor="@color/brand_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textAllCaps="true"
+                        tools:text="Section A-14" />
+
+                    <TextView
+                        android:id="@+id/tvArrivalDestName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textColor="@color/text_main"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        tools:text="Men's Heattech" />
+
+                    <TextView
+                        android:id="@+id/tvArrivalDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/text_muted"
+                        android:textSize="16sp"
+                        android:lineSpacingMultiplier="1.3"
+                        tools:text="Here you will find our range of products." />
+
+                    <!-- Color swatches -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical">
+                        <View android:layout_width="36dp" android:layout_height="36dp" android:background="@drawable/bg_primary_circle" />
+                        <View android:layout_width="36dp" android:layout_height="36dp" android:layout_marginStart="-8dp" android:background="@drawable/bg_badge_neutral" />
+                        <View android:layout_width="36dp" android:layout_height="36dp" android:layout_marginStart="-8dp" android:background="@drawable/bg_progress_track" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Visual area -->
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="240dp"
+                    android:layout_weight="2"
+                    android:background="@color/neutral_100">
+                    <ImageView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:layout_gravity="bottom|start"
+                        android:layout_margin="16dp"
+                        android:src="@android:drawable/ic_menu_sort_by_size"
+                        android:contentDescription="商品"
+                        app:tint="@color/white"
+                        android:alpha="0.7" />
+                </FrameLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Footer: Voice prompt -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingBottom="32dp">
+
+            <TextView
+                android:id="@+id/tvArrivalAskMore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/arrival_ask_more"
+                android:textColor="@color/text_muted"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Voice bar -->
+            <LinearLayout
+                android:id="@+id/arrivalVoiceBar"
+                android:layout_width="wrap_content"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_voice_bar"
+                android:elevation="4dp"
+                android:gravity="center"
+                android:paddingHorizontal="24dp">
+                <ImageView
+                    android:id="@+id/ivArrivalMic"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:contentDescription="マイク"
+                    app:tint="@color/brand_primary" />
+                <View android:layout_width="6dp" android:layout_height="16dp" android:layout_marginStart="16dp" android:background="@color/brand_primary_40" />
+                <View android:layout_width="6dp" android:layout_height="24dp" android:layout_marginStart="6dp" android:background="@color/brand_primary_60" />
+                <View android:layout_width="6dp" android:layout_height="32dp" android:layout_marginStart="6dp" android:background="@color/brand_primary_80" />
+                <View android:layout_width="6dp" android:layout_height="20dp" android:layout_marginStart="6dp" android:background="@color/brand_primary" />
+                <View android:layout_width="6dp" android:layout_height="28dp" android:layout_marginStart="6dp" android:background="@color/brand_primary_80" />
+                <View android:layout_width="6dp" android:layout_height="16dp" android:layout_marginStart="6dp" android:background="@color/brand_primary_60" />
+                <TextView
+                    android:id="@+id/tvArrivalListeningStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/listening_status"
+                    android:textColor="@color/brand_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="true" />
+                <!-- Countdown on arrival -->
+                <TextView
+                    android:id="@+id/tvArrivalCountdown"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="@color/text_muted"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,101 @@
+<resources>
+    <string name="app_name">ショップガイド</string>
+    <string name="mic_description">マイクボタン</string>
+
+    <!-- 待機画面 -->
+    <string name="brand_name">ショップガイド</string>
+    <string name="brand_subtitle">ショップガイドロボット</string>
+    <string name="idle_welcome">いらっしゃいませ</string>
+    <string name="idle_select_language">言語を選択してください</string>
+    <string name="idle_start">タッチで開始</string>
+    <string name="idle_greeting_ja">いらっしゃいませ</string>
+    <string name="idle_greeting_zh">欢迎光临</string>
+    <string name="lang_ja">日本語</string>
+    <string name="lang_en">English</string>
+    <string name="lang_zh">中文</string>
+    <string name="idle_cta_ja">本日はどのようなご用件でしょうか。</string>
+    <string name="idle_cta_tap">タップして会話を開始</string>
+    <string name="idle_online">オンライン</string>
+    <string name="brand_concierge">自動コンシェルジュ</string>
+
+    <!-- 挨拶画面 -->
+    <string name="greeting_ja">いらっしゃいませ</string>
+    <string name="greeting_en">Welcome!</string>
+    <string name="assistant_active">アシスタント起動中</string>
+
+    <!-- 録音画面 -->
+    <string name="listening_status">お伺いしています…</string>
+    <string name="listening_hint">マイクに向かってお話しください</string>
+    <string name="end_session">終了する</string>
+    <string name="suggestions_label">よくある質問:</string>
+    <string name="suggestion_1">新作はどこ？</string>
+    <string name="suggestion_2">フロアマップ</string>
+    <string name="suggestion_3">試着室はどこ？</string>
+    <string name="listening_placeholder">お話しください…</string>
+
+    <!-- 思考中画面（テキストなし） -->
+
+    <!-- 案内開始画面 -->
+    <string name="guidance_title">お任せください！</string>
+    <string name="guidance_subtitle">目的地までご案内いたします。</string>
+    <string name="destination_label">目的地</string>
+    <string name="moving_forward">移動中</string>
+    <string name="robot_active">ロボット稼働中</string>
+
+    <!-- ナビゲーション画面 -->
+    <string name="nav_heading">目的地へ向かっています…</string>
+    <string name="nav_current_location">現在地</string>
+    <string name="nav_start_point">メインエントランス</string>
+    <string name="nav_destination">目的地</string>
+    <string name="nav_stop">案内を停止</string>
+    <string name="nav_eta">あと約%1$s秒で到着します</string>
+
+    <!-- 到着画面 -->
+    <string name="arrival_title">到着しました！</string>
+    <string name="arrival_ask_more">他にお探しのものはありますか？</string>
+    <string name="arrival_done">完了</string>
+
+    <!-- スタッフ呼出画面 -->
+    <string name="staff_title">スタッフを\nお呼びしています</string>
+    <string name="staff_subtitle">もうしばらくお待ちください。</string>
+    <string name="staff_contacting">スタッフ呼出中</string>
+    <string name="staff_cancel">呼出をキャンセル</string>
+    <string name="staff_lang_selector">日本語 | English | 中文</string>
+    <string name="staff_not_found">申し訳ございません。スタッフが見つかりませんでした。ホームへ戻ります。</string>
+    <string name="staff_calling">スタッフを呼んでいます</string>
+
+    <!-- DialogActionHandler & MainActivity Message Strings -->
+    <string name="msg_welcome_details">いらっしゃいませ。お洋服のことでしたらお気軽にお声がけください。</string>
+    <string name="msg_prompt">はい、何でしょうか？</string>
+    <string name="msg_retry">もう一度おっしゃっていただけますか？</string>
+    <string name="msg_returning_home">かしこまりました。ホームへ戻ります。</string>
+    <string name="msg_understood">かしこまりました。</string>
+    <string name="msg_pause_ready">ご準備はよろしいですか？</string>
+    <string name="msg_guide_start">ご案内します</string>
+    <string name="msg_location_not_found">申し訳ございません、その場所が見つかりません。</string>
+    <string name="msg_pause_waiting">お待ちしております</string>
+    <string name="msg_nav_abort">案内を中断しました。ホームに戻ります。</string>
+    <string name="msg_arrival">到着しました。</string>
+    <string name="msg_arrival_corner_prefix">こちらです。</string>
+    <string name="msg_arrival_corner_suffix">コーナーです。他にお探しのものはありますか？</string>
+    <string name="msg_arrival_more">こちらです。他にお探しのものはありますか？</string>
+    <string name="msg_no_person">お客様がいらっしゃらないようです。ホームに戻ります。</string>
+    <string name="msg_person_question">お客様？</string>
+    <string name="msg_ask_more">他にお手伝いできることはありますか？</string>
+    <string name="msg_nav_home">ホーム</string>
+    <string name="msg_nav_returning">戻り中…</string>
+    <string name="msg_greeting_ask">いらっしゃいませ。何かお探しですか？</string>
+
+    <!-- レガシー（互換性用） -->
+    <string name="status_idle">タップして開始</string>
+    <string name="status_listening">お伺いしています…</string>
+    <string name="status_thinking">考え中…</string>
+    <string name="status_speaking">お話し中…</string>
+    <string name="status_navigating">目的地へ移動中…</string>
+    <string name="error_network">ネットワークエラー</string>
+    <string name="error_location">場所が見つかりません</string>
+    
+    <!-- SDK Metadata Keys -->
+    <string name="metadata_kiosk">com.robotemi.sdk.metadata.KIOSK</string>
+    <string name="metadata_override_conversation_layer">com.robotemi.sdk.metadata.OVERRIDE_CONVERSATION_LAYER</string>
+</resources>

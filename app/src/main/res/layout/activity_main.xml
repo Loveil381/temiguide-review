@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_light"
+    tools:context=".MainActivity">
+
+    <!-- ==================== SCREEN 1: IDLE ==================== -->
+    <include layout="@layout/screen_idle" />
+
+    <!-- ==================== SCREEN 2: GREETING ==================== -->
+    <include layout="@layout/screen_greeting" />
+
+    <!-- ==================== SCREEN 3: LISTENING ==================== -->
+    <include layout="@layout/screen_listening" />
+
+    <!-- ==================== SCREEN 4: THINKING ==================== -->
+    <include layout="@layout/screen_thinking" />
+
+    <!-- ==================== SCREEN 5: GUIDANCE START ==================== -->
+    <include layout="@layout/screen_guidance" />
+
+    <!-- ==================== SCREEN 6: NAVIGATION ==================== -->
+    <include layout="@layout/screen_navigation" />
+
+    <!-- ==================== SCREEN 7: ARRIVAL ==================== -->
+    <include layout="@layout/screen_arrival" />
+
+    <!-- ==================== SCREEN 8: STAFF ASSIST ==================== -->
+    <include layout="@layout/screen_staff" />
+
+    <View
+        android:id="@+id/devMenuTrigger"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_gravity="top|end"
+        android:background="@android:color/transparent" />
+
+</FrameLayout>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#F0F0F0">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Developer Menu"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- AI Settings -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="AI &amp; Voice Settings" android:textStyle="bold" android:layout_marginTop="8dp"/>
+            
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="AI Provider: "/>
+                <Spinner android:id="@+id/spinnerAiProvider" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Voice Mode: "/>
+                <Spinner android:id="@+id/spinnerVoiceMode" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <EditText android:id="@+id/editApiKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="API Key" android:inputType="textPassword" />
+            <EditText android:id="@+id/editModelName" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Model Name" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Thinking Level: "/>
+                <Spinner android:id="@+id/spinnerThinkingLevel" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#CCCCCC" android:layout_marginVertical="12dp"/>
+
+            <!-- Autonomy & Detection -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Autonomy &amp; Detection" android:textStyle="bold"/>
+            
+            <Switch android:id="@+id/switchIdleTalk" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="独り言 (Idle Talk)" />
+            <Switch android:id="@+id/switchAutonomy" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="自律行動 (Autonomy)" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="8dp">
+                <TextView android:id="@+id/txtDetectionDistance" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="検知距離: 1.5m" />
+                <SeekBar android:id="@+id/seekDetectionDistance" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="5" android:progress="2" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#CCCCCC" android:layout_marginVertical="12dp"/>
+
+            <!-- State & Logs -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Current State" android:textStyle="bold"/>
+            <TextView android:id="@+id/txtCurrentState" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="State: Idle" android:layout_marginBottom="8dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Device Logs" android:textStyle="bold"/>
+            <ScrollView android:layout_width="match_parent" android:layout_height="200dp" android:background="#FFFFFF" android:padding="4dp">
+                <TextView android:id="@+id/txtLogs" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Logs here..." android:textSize="10sp" android:fontFamily="monospace"/>
+            </ScrollView>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#CCCCCC" android:layout_marginVertical="12dp"/>
+
+            <!-- Test Buttons -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tests" android:textStyle="bold"/>
+            <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="3" android:layout_marginTop="8dp">
+                <Button android:id="@+id/btnTestAi" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:text="AI Test" android:textSize="12sp" />
+                <Button android:id="@+id/btnTestTts" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:text="TTS Test" android:textSize="12sp" />
+                <Button android:id="@+id/btnTestNav" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:text="Nav Test" android:textSize="12sp" />
+            </GridLayout>
+
+            <Button android:id="@+id/btnSaveAndExit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save &amp; Exit" android:layout_marginTop="16dp" style="?android:attr/buttonStyleSmall"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
