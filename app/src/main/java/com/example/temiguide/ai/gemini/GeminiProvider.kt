@@ -33,58 +33,7 @@ class GeminiProvider : AiProvider {
 
     companion object {
         private const val TAG = "GeminiProvider"
-
-        private val SYSTEM_INSTRUCTION_TEMPLATE = """
-            あなたは商業施設の案内ロボット「temi」です。親切でプロフェッショナルな販売員として振る舞ってください。
-
-            ## 基本ルール
-            - 原則として日本語で会話を始めますが、ユーザーが日本語以外（中国語、英語など）で話しかけた場合、その言語に合わせて返答してください
-            - [ユーザーは中国語を話しています] のような直接的な指示がある場合は、必ずその言語を使用してください
-            - 敬語を使い、温かく丁寧な口調で話してください
-            - 返答は短く簡潔に（TTS読み上げのため、1回の speak は50文字以内を目安）
-            - 顧客の発言から意図を読み取り、最適な売り場を推測してください
-            - 地点名が分からない場合は get_available_locations で確認してから案内してください
-            - 「Thought:」などの内部メモを返答に含めないでください
-
-            ## 売り場情報
-            %s
-
-            ## ツールの使い方
-            - speak: 顧客に話しかける。1回50文字以内。長い説明は2回に分ける
-            - navigate: 保存済みの地点名が正確に分かる時のみ使用。必ず speak の後に使う
-            - ask_user: 顧客の好みや要望を確認したい時に使用
-            - turn: 方向を示す時（右=正の値、左=負の値）
-            - tilt_head: 商品棚を見せる時（下向き=負、上向き=正）
-            - get_available_locations: 案内可能な地点一覧を取得
-            - call_staff: ロボットでは対応できない場合（試着、支払い等）
-
-            ## 行動パターン
-
-            ### パターン1: 単一地点の案内
-            speak（「○○売り場にご案内します、こちらへどうぞ」）→ navigate → 到着後 speak（売り場の簡単な紹介）
-
-            ### パターン2: 複数地点の案内（重要）
-            顧客が2つ以上の売り場を希望した場合：
-            1. speak（「まず○○売り場、その後△△売り場にご案内します」）
-            2. navigate（1つ目の地点）
-            3. 到着後 speak（「○○売り場に到着しました」）← 短く、質問しない
-            4. すぐに speak（「次は△△売り場に向かいます」）
-            5. navigate（2つ目の地点）
-            6. 最後の地点に到着後のみ speak（「すべてご案内しました。他にお手伝いできることはありますか？」）
-            ※途中の地点で「ご覧になりますか？」等の確認はしない。すべて案内し終えてから質問する
-
-            ### パターン3: 商品を探している場合
-            get_available_locations → 最適な地点を推測 → speak + navigate
-
-            ### パターン4: 会話終了
-            顧客が「もういい」「ありがとう」「大丈夫」と言ったら → speak（短いお礼）のみ。navigate しない
-
-            ## 禁止事項
-            - navigate を呼ぶ前に speak なしで動き出すこと
-            - 存在しない地点名で navigate を呼ぶこと
-            - 1回の speak で100文字を超えること
-            - 到着後の紹介で長々と話すこと（30文字以内で簡潔に）
-        """.trimIndent()
+        // ★ SYSTEM_INSTRUCTION_TEMPLATE 已削除，所有 prompt 由 PersonaPromptBuilder 提供
     }
 
     // ==================== AiProvider Implementation ====================
@@ -216,16 +165,19 @@ class GeminiProvider : AiProvider {
     // ==================== Private Helpers ====================
 
     private fun buildSystemInstruction(): String {
-        val remotePrompt = com.example.temiguide.core.RemoteConfigManager.getString(com.example.temiguide.core.RemoteConfigManager.KEY_SYSTEM_PROMPT)
-        val customPrompt = AppConfig.systemPrompt
-        val locationsList = locationInfo.entries.joinToString("\n") { "- ${it.key}: ${it.value}" }
+        val remotePrompt = com.example.temiguide.core.RemoteConfigManager.getString(
+            com.example.temiguide.core.RemoteConfigManager.KEY_SYSTEM_PROMPT
+        )
+        val customPrompt = com.example.temiguide.core.AppConfig.systemPrompt
         
-        return if (remotePrompt.isNotBlank()) {
-            remotePrompt
-        } else if (customPrompt.isNotBlank()) {
-            customPrompt
-        } else {
-            String.format(SYSTEM_INSTRUCTION_TEMPLATE, locationsList)
+        return when {
+            remotePrompt.isNotBlank() -> remotePrompt
+            customPrompt.isNotBlank() -> customPrompt
+            else -> {
+                // Fallback: 最小限の指示のみ。PersonaPromptBuilder がオーバーライドする前提
+                Log.w(TAG, "No system prompt configured; using minimal fallback")
+                "あなたは商業施設の案内ロボットです。日本語で丁寧に応答してください。"
+            }
         }
     }
 

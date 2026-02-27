@@ -139,7 +139,8 @@ class NavigationHandler(
                 dialogActionHandler.pendingQueueCompletion?.invoke()
                 dialogActionHandler.pendingQueueCompletion = null
                 
-                if (dialogActionHandler.actionQueue?.isRunning == false) {
+                @Suppress("DEPRECATION")
+                if (dialogActionHandler.actionQueue == null) {  // actionQueue 已削除，始終 true
                     postSafely?.invoke(10000) {
                         com.example.temiguide.utils.DevLog.add("ARRIVAL", "arrival cooldown timer finished, checking state")
                         if (stateManager.isInState(AppState.Arrival::class)) {

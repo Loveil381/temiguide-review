@@ -221,7 +221,7 @@ class MainActivity : AppCompatActivity(),
         toolRegistry.register(TurnTool(robot))
         toolRegistry.register(TiltHeadTool(robot))
         toolRegistry.register(GetLocationsTool(robot))
-        toolRegistry.register(CallStaffTool())
+        toolRegistry.register(CallStaffTool(stateManager))
 
         if (aiProvider is GeminiProvider) {
             aiProvider.toolRegistry = toolRegistry
@@ -236,7 +236,7 @@ class MainActivity : AppCompatActivity(),
             MapZone("入口", 0f, 0f, 0f, "店舗の入り口"),
             MapZone("窓際", 2.0f, 2.0f, 0f, "窓際のエリア")
         )
-        autonomyHandler = AutonomyHandler(stateManager, behaviorScheduler, robotController, ttsProvider, mapZones)
+        autonomyHandler = AutonomyHandler(stateManager, behaviorScheduler, robotController, ttsProvider, mapZones, navigationHandler)
         
         // Apply Config
         com.example.temiguide.utils.DevLog.add("Init", "Detection distance config is ${AppConfig.detectionDistance}m")
@@ -432,6 +432,7 @@ class MainActivity : AppCompatActivity(),
         robot.addOnFaceRecognizedListener(this)
         
         patrolManager.recreate()
+        autonomyHandler.recreate()
     }
 
     override fun onStop() {
@@ -449,6 +450,7 @@ class MainActivity : AppCompatActivity(),
         screenManager.stopClockUpdates()
         clearActionRunnables()
         patrolManager.destroy()
+        autonomyHandler.stopAutonomyLoop()
         watchdogRunnable?.let { handler.removeCallbacks(it) }
     }
 

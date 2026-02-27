@@ -6,7 +6,6 @@ import android.view.View
 import com.example.temiguide.MainActivity
 import com.example.temiguide.R
 import com.example.temiguide.ui.ScreenManager
-import com.robotemi.sdk.TtsRequest
 import com.example.temiguide.core.StateManager
 import com.example.temiguide.core.AppState
 
@@ -18,22 +17,40 @@ class DialogActionHandler(
     private val stateManager: StateManager
 ) {
 
+    // ★ isGuideMode は NavigationHandler が管轄すべきだが、
+    //   DetectionHandler・NavigationHandler 等 6 か所から参照されているため、
+    //   移行期としてここに残す。Phase 4 で NavigationHandler へ移行する。
     var isGuideMode = false
-    var isNavigating = false
-    var isQueueAskMode = false
-    var isStaffCallActive = false
-    var pendingQueueCompletion: (() -> Unit)? = null
-    var pendingArrivalAnnouncement: String? = null
 
-    // Helper functions passed from MainActivity
+    // ★ isNavigating は NavigationHandler.isNavigating へ完全移行済み。
+    //   レガシー参照があれば NavigationHandler を参照する。
+    @Deprecated("Use NavigationHandler.isNavigating instead", ReplaceWith("navigationHandler.isNavigating"))
+    var isNavigating = false
+
+    var isStaffCallActive = false
+
+    // ★ pendingArrivalAnnouncement / pendingQueueCompletion は
+    //   NavigationHandler.handleArrival() でのみ使用。
+    //   現状 handleArrival 内で直接参照するため残すが、
+    //   Phase 4 で NavigationHandler 内フィールドへ移行する。
+    var pendingArrivalAnnouncement: String? = null
+    var pendingQueueCompletion: (() -> Unit)? = null
+
+    // ★ isQueueAskMode 削除済み（Phase 2 で onAsrResult 内の分岐を削除済み）
+    //   以下は互換性のためゼロコスト stub を残す
+    @Deprecated("Queue-ask mode removed in Phase 2")
+    var isQueueAskMode: Boolean
+        get() = false
+        set(_) {}
+
+    // ★ actionQueue 削除済み。互換性 stub。
+    @Deprecated("ActionQueue removed in Phase 2")
+    val actionQueue: Nothing? = null
+
     private var postSafelyInternal: ((Long, () -> Unit) -> Unit)? = null
     private var returnToHomeInternal: (() -> Unit)? = null
     private var speakAndListenInternal: ((String) -> Unit)? = null
     private var speakOnlyInternal: ((String, (() -> Unit)?) -> Unit)? = null
-
-    private var onSaveMemoryInternal: ((String, String) -> Unit)? = null
-    private var onMoveToZoneInternal: ((String) -> Unit)? = null
-    private var onNavStartInternal: (() -> Unit)? = null
 
     fun setCallbacks(
         postSafely: (Long, () -> Unit) -> Unit,
@@ -48,9 +65,6 @@ class DialogActionHandler(
         this.returnToHomeInternal = returnToHome
         this.speakAndListenInternal = speakAndListen
         this.speakOnlyInternal = speakOnly
-        this.onSaveMemoryInternal = onSaveMemory
-        this.onMoveToZoneInternal = onMoveToZone
-        this.onNavStartInternal = onNavStart
     }
 
     private fun postSafely(delay: Long, action: () -> Unit) {
@@ -61,20 +75,15 @@ class DialogActionHandler(
         returnToHomeInternal?.invoke()
     }
 
-    private fun speakAndListen(text: String) {
-        speakAndListenInternal?.invoke(text)
-    }
-
     private fun speakOnly(text: String, onDone: (() -> Unit)? = null) {
         speakOnlyInternal?.invoke(text, onDone)
     }
 
-    private fun handleCallStaff(reply: String, ttsLang: TtsRequest.Language) {
+    fun handleCallStaff(reply: String) {
         speakOnly(reply)
-        screenManager.showScreen(MainActivity.SCREEN_STAFF)
+        screenManager.showScreen(ScreenManager.SCREEN_STAFF)
         isStaffCallActive = true
         
-        // Animate progress bar
         postSafely(500) {
             if (!isStaffCallActive) return@postSafely
             val viewStaffProgress = activity.findViewById<View>(R.id.viewStaffProgress)
@@ -106,7 +115,7 @@ class DialogActionHandler(
 
     fun cancelAll() {
         pendingQueueCompletion = null
-        isQueueAskMode = false
         isStaffCallActive = false
+        pendingArrivalAnnouncement = null
     }
 }
