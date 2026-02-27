@@ -282,7 +282,7 @@ class ConversationHandler(
                 Log.w("TemiGuide", "No internet connection")
                 ttsProvider?.speak(AppConstants.MSG_NO_INTERNET)
                 stateManager.transition(AppState.Idle)
-                activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_IDLE) }
+                activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_IDLE) }
                 return@launch
             }
 
@@ -324,7 +324,6 @@ class ConversationHandler(
                 if (!result.text.isBlank() && !result.waitingForUser) {
                     stateManager.transition(AppState.Speaking(result.text))
                     
-                    // AI 応答後、TTS が全部終わったら wakeup で ASR を再起動
                     if (ttsProvider is com.example.temiguide.voice.temi.TemiTtsProvider) {
                         ttsProvider.onAllSpeechComplete = {
                             val state = stateManager.getCurrentState()
@@ -332,20 +331,18 @@ class ConversationHandler(
                                 Log.d("TemiGuide", "All TTS chunks complete, calling wakeup()")
                                 robotController.robot.wakeup()
                             }
-                            ttsProvider.onAllSpeechComplete = null  // 一次性回调
+                            // ★ TTS 完了直後にリスニング状態へ移行
+                            Log.d("TemiGuide", "AI response spoken, transitioning to Listening")
+                            stateManager.transition(AppState.Listening())
+                            activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_LISTENING) }
+                            isListening = true
+                            startAsrTimeout()
+                            ttsProvider.onAllSpeechComplete = null
                         }
                     }
                     
                     ttsProvider?.speakInChunks(result.text, detectedLanguage)
                 }
-
-                // AI 応答後、リスニング状態へ移行して次の発話を待つ（Loop Pattern）
-                Log.d("TemiGuide", "AI response spoken, transitioning to Listening for next input")
-                stateManager.transition(AppState.Listening())
-                activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_LISTENING) }
-                
-                // 15秒の音声を待ち受け、何もなければ Idle へ
-                startAsrTimeout()
 
             } catch (e: kotlinx.coroutines.CancellationException) {
                 Log.d("TemiGuide", "ReAct job cancelled by new input")

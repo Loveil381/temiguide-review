@@ -1,27 +1,10 @@
 package com.example.temiguide.models
 
-// The detailed JSON structure we expect from OpenAI, now used for internal mapping
-data class TemiActionResponse(
-    val reply: String,
-    val actions: List<com.example.temiguide.ActionQueue.ActionItem>? = null,
-    // 後方互換: 古い形式もパースできるようにする
-    val action: String? = null,
-    val location: String? = null,
-    val language: String? = "ja" // "ja", "en", "zh"
-)
-
 // ==================== Location Info ====================
 val locationInfo = mapOf(
-    "メンズトップス" to "メンズトップス",
-    "メンズボトムス" to "メンズボトムス",
-    "レディーストップス" to "レディーストップス",
-    "レディースボトムス" to "レディースボトムス",
-    "アウター" to "アウター",
-    "インナー" to "インナー・肌着",
-    "キッズベビー" to "キッズ・ベビー",
-    "小物" to "小物・アクセサリー",
-    "試着室" to "試着室",
-    "レジ" to "レジ",
-    "トイレ" to "お手洗い",
-    "出口" to "出口"
+    "服装" to "服装売り場 — メンズ・レディースのトップス、ボトムス、アウター、インナー（ヒートテック等）、肌着",
+    "本" to "書籍コーナー — 雑誌、小説、漫画、ビジネス書",
+    "グッズ" to "グッズ売り場 — 小物、アクセサリー、バッグ、帽子、ベルト",
+    "食品" to "食品売り場 — お菓子、飲料、弁当",
+    "レジ" to "レジ・お会計 — お支払い、袋詰め"
 )

@@ -87,7 +87,6 @@ ScreenManager.startIdleTimer() [60秒] → PatrolManager.startPatrol() → robot
 
 ## 7. 既知の制約事項
 
-- `DialogActionHandler` に旧管線の残骸 (isGuideMode 等) が残存。Phase 3 以降で整理予定
-- `AutonomyHandler` の goToLocation は NavigationHandler を経由しない
-- System Prompt が GeminiProvider と PersonaPromptBuilder の 2 箇所に存在
-- 単体テスト未整備
+- `DialogActionHandler` に `isGuideMode` など旧管線のフィールドが残存（@Deprecated 付き）。Phase 4 で NavigationHandler へ完全移行予定
+- `ConversationHandler` 内に `processUserQuery` の `MainActivity.SCREEN_IDLE` 残留参照あり（要修正）
+- `CallStaffTool` の UI 連携は `DialogActionHandler.handleCallStaff()` 経由で実現。将来的にはスタッフ通知 Webhook と連携予定

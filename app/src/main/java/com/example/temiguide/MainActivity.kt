@@ -221,7 +221,7 @@ class MainActivity : AppCompatActivity(),
         toolRegistry.register(TurnTool(robot))
         toolRegistry.register(TiltHeadTool(robot))
         toolRegistry.register(GetLocationsTool(robot))
-        toolRegistry.register(CallStaffTool(stateManager))
+        toolRegistry.register(CallStaffTool(stateManager, dialogActionHandler))
 
         if (aiProvider is GeminiProvider) {
             aiProvider.toolRegistry = toolRegistry

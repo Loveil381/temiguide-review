@@ -29,8 +29,10 @@ class PersonaPromptBuilder(
             ・あなたのエネルギーレベル: ${energy} / 1.0
             ・現在位置: ${currentZone} 
             
-            [売り場情報]
+            [売り場情報（navigate で使える地点名 → 取扱商品）]
             ${locationsList}
+            ※ navigate のパラメータには「→」の左側の地点名のみ使用可能です
+            ※ お客様の言葉から最も近い売り場を推測し、その地点名で navigate してください
 
             [ここまでの会話（短期記憶）]
             ${shortTermMemorySummary}

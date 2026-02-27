@@ -6,9 +6,11 @@ import com.example.temiguide.ai.tools.ToolParam
 import com.example.temiguide.ai.tools.ToolResult
 import com.example.temiguide.core.AppState
 import com.example.temiguide.core.StateManager
+import com.example.temiguide.robot.DialogActionHandler
 
 class CallStaffTool(
-    private val stateManager: StateManager? = null
+    private val stateManager: StateManager? = null,
+    private val dialogActionHandler: DialogActionHandler? = null
 ) : TemiTool {
     override val name: String = "call_staff"
     override val description: String = "店員を呼ぶ。ロボットでは対応できない専門的な要望や、試着・支払いなどの場合に使用。"
@@ -19,11 +21,13 @@ class CallStaffTool(
     override suspend fun execute(args: Map<String, Any?>): ToolResult {
         val reason = args["reason"] as? String ?: "お客様対応"
         
-        // 状態遷移
         stateManager?.let {
             val ok = it.transition(AppState.StaffCall(reason))
             if (!ok) it.forceTransition(AppState.StaffCall(reason))
         }
+        
+        // ★ UI 聯動
+        dialogActionHandler?.handleCallStaff("スタッフをお呼びします。$reason")
         
         return ToolResult(true, "店員を呼びました。理由: $reason", shouldWaitForUser = true)
     }
