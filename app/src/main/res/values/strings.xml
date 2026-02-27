@@ -95,6 +95,13 @@
     <string name="error_network">ネットワークエラー</string>
     <string name="error_location">場所が見つかりません</string>
     
+    <string name="msg_silence_prompt">何かお手伝いできることはありますか？</string>
+    <string name="msg_silence_goodbye">またお声がけくださいね</string>
+    <string name="msg_nav_retry">申し訳ございません、道がふさがっているようです。少し待ってからもう一度ご案内します。</string>
+    <string name="msg_nav_give_up">申し訳ございません、現在ご案内が難しい状況です。スタッフをお呼びしましょうか？</string>
+    <string name="msg_react_retry">申し訳ございません、少々お待ちください。もう一度お伺いしてもよろしいでしょうか？</string>
+    <string name="msg_patrol_arrive">こちらは%sコーナーです。ぜひご覧ください。</string>
+    
     <!-- SDK Metadata Keys -->
     <string name="metadata_kiosk">com.robotemi.sdk.metadata.KIOSK</string>
     <string name="metadata_override_conversation_layer">com.robotemi.sdk.metadata.OVERRIDE_CONVERSATION_LAYER</string>

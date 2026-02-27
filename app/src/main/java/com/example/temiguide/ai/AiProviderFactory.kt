@@ -29,28 +29,13 @@ object AiProviderFactory {
      * @throws IllegalStateException 未知のプロバイダ種別が設定されている場合
      */
     fun getProvider(): AiProvider {
-        val type = AppConfig.aiProvider
-        return when (type) {
-            AiProviderType.GEMINI -> providers[type] ?: throw IllegalStateException("Gemini provider not initialized")
-            AiProviderType.OPENAI -> throw UnsupportedOperationException("OpenAI provider not implemented")
-            AiProviderType.DEEPSEEK -> throw UnsupportedOperationException("DeepSeek provider not implemented")
-            AiProviderType.LOCAL -> throw UnsupportedOperationException("Local provider not implemented")
-        }
+        return providers[AiProviderType.GEMINI] 
+            ?: throw IllegalStateException("Gemini provider not initialized")
     }
 
-    /**
-     * 指定した種別のプロバイダを取得する。
-     *
-     * @param type プロバイダ種別
-     * @throws IllegalStateException 未知のプロバイダ種別の場合
-     */
     fun getProvider(type: AiProviderType): AiProvider {
-        return when (type) {
-            AiProviderType.GEMINI -> providers[type] ?: throw IllegalStateException("Gemini provider not initialized")
-            AiProviderType.OPENAI -> throw UnsupportedOperationException("OpenAI provider not implemented")
-            AiProviderType.DEEPSEEK -> throw UnsupportedOperationException("DeepSeek provider not implemented")
-            AiProviderType.LOCAL -> throw UnsupportedOperationException("Local provider not implemented")
-        }
+        return providers[type] 
+            ?: throw IllegalStateException("Provider $type not initialized")
     }
 
     /**

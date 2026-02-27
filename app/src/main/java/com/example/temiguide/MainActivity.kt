@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var patrolManager: com.example.temiguide.robot.PatrolManager
     private lateinit var faceManager: FaceManager
     private lateinit var voiceProviderFactory: VoiceProviderFactory
-    private var sttProvider: SttProvider? = null
+    internal var sttProvider: SttProvider? = null
     private var ttsProvider: TtsProvider? = null
     private var liveVoiceProvider: LiveVoiceProvider? = null
 
@@ -93,15 +93,6 @@ class MainActivity : AppCompatActivity(),
     companion object {
         lateinit var stateManager: StateManager
         lateinit var autonomyHandler: AutonomyHandler
-
-        const val SCREEN_IDLE = 0
-        const val SCREEN_GREETING = 1
-        const val SCREEN_LISTENING = 2
-        const val SCREEN_THINKING = 3
-        const val SCREEN_GUIDANCE = 4
-        const val SCREEN_NAVIGATION = 5
-        const val SCREEN_ARRIVAL = 6
-        const val SCREEN_STAFF = 7
     }
 
     // Action Runnables to prevent memory leaks
@@ -226,7 +217,7 @@ class MainActivity : AppCompatActivity(),
             toolRegistry.register(SpeakTool(temiTts, screenManager) { conversationHandler.detectedLanguage })
             toolRegistry.register(AskUserTool(robot, temiTts) { conversationHandler.detectedLanguage })
         }
-        toolRegistry.register(NavigateTool(robot, stateManager, screenManager))
+        toolRegistry.register(NavigateTool(robot, stateManager, screenManager, navigationHandler))
         toolRegistry.register(TurnTool(robot))
         toolRegistry.register(TiltHeadTool(robot))
         toolRegistry.register(GetLocationsTool(robot))
@@ -296,7 +287,7 @@ class MainActivity : AppCompatActivity(),
             conversationHandler.isArrivalListening = false
             conversationHandler.pendingAutoListen = false
 
-            screenManager.showScreen(SCREEN_GREETING)
+            screenManager.showScreen(ScreenManager.SCREEN_GREETING)
 
             // askQuestion で挨拶＋自動ASR
             postSafely(100) {
@@ -335,7 +326,7 @@ class MainActivity : AppCompatActivity(),
 
         // Start clock updates
         screenManager.startClockUpdates()
-        screenManager.showScreen(SCREEN_IDLE)
+        screenManager.showScreen(ScreenManager.SCREEN_IDLE)
 
         setupDevMenuTrigger()
         startWatchdog()
@@ -361,7 +352,7 @@ class MainActivity : AppCompatActivity(),
         clearActionRunnables()
         
         conversationHandler.clearHistory()
-        screenManager.showScreen(SCREEN_IDLE)
+        screenManager.showScreen(ScreenManager.SCREEN_IDLE)
         autonomyHandler.startAutonomyLoop()
     }
 
@@ -439,7 +430,8 @@ class MainActivity : AppCompatActivity(),
         robot.addOnConversationStatusChangedListener(this)
         robot.addOnSequencePlayStatusChangedListener(this)
         robot.addOnFaceRecognizedListener(this)
-
+        
+        patrolManager.recreate()
     }
 
     override fun onStop() {
@@ -456,6 +448,7 @@ class MainActivity : AppCompatActivity(),
 
         screenManager.stopClockUpdates()
         clearActionRunnables()
+        patrolManager.destroy()
         watchdogRunnable?.let { handler.removeCallbacks(it) }
     }
 
@@ -476,7 +469,7 @@ class MainActivity : AppCompatActivity(),
             }
             
             if (!isInitialized) {
-                screenManager.showScreen(SCREEN_IDLE)
+                screenManager.showScreen(ScreenManager.SCREEN_IDLE)
                 autonomyHandler.startAutonomyLoop()
                 
                 if (isFirstWelcome) {
@@ -542,8 +535,12 @@ class MainActivity : AppCompatActivity(),
                 Log.d("TemiGuide", "ASR listening started")
             }
             2 -> {
-                // ASR 结果返回（来自 robot.wakeup() 触发的对话）
+                // ASR 结果返回（来自 robot.wakeup() 触发 de 对话）
                 Log.d("TemiGuide", "ASR result from wakeup: $text")
+                // TemiSttProvider の AsrListener 重複を防ぐ
+                if (sttProvider is com.example.temiguide.voice.temi.TemiSttProvider) {
+                    (sttProvider as com.example.temiguide.voice.temi.TemiSttProvider).markAsHandled()
+                }
                 if (text.isNotBlank()) {
                     conversationHandler.onAsrResult(text)
                 }

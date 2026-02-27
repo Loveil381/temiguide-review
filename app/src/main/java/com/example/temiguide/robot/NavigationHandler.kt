@@ -54,7 +54,7 @@ class NavigationHandler(
                 isNavigating = false
                 
                 if (location.lowercase(Locale.getDefault()) == AppConstants.HOME_BASE) {
-                    screenManager.showScreen(MainActivity.SCREEN_IDLE)
+                    screenManager.showScreen(ScreenManager.SCREEN_IDLE)
                     onIdleResumed?.invoke()
                     screenManager.cancelIdleTimer()
                 } else {
@@ -71,7 +71,7 @@ class NavigationHandler(
                 if (userEndedSession) {
                     dialogActionHandler.isGuideMode = false
                     userEndedSession = false
-                    screenManager.showScreen(MainActivity.SCREEN_IDLE)
+                    screenManager.showScreen(ScreenManager.SCREEN_IDLE)
                     onIdleResumed?.invoke()
                 } else {
                     retryCount++
@@ -80,14 +80,14 @@ class NavigationHandler(
                         Log.d("TemiGuide", "isNavigating set to FALSE at status ABORT (max retries) (L78)")
                         isNavigating = false
                         retryCount = 0
-                        conversationHandler.speakOnly("申し訳ございません、現在ご案内が難しい状況です。スタッフをお呼びしましょうか？") {
+                        conversationHandler.speakOnly(activity.getString(R.string.msg_nav_give_up)) {
                             postSafely?.invoke(200) {
-                                screenManager.showScreen(MainActivity.SCREEN_IDLE)
+                                screenManager.showScreen(ScreenManager.SCREEN_IDLE)
                                 onIdleResumed?.invoke()
                             }
                         }
                     } else {
-                        conversationHandler.speakOnly("申し訳ございません、道がふさがっているようです。少し待ってからもう一度ご案内します。") {
+                        conversationHandler.speakOnly(activity.getString(R.string.msg_nav_retry)) {
                             postSafely?.invoke(3000) {
                                 robotController.goToLocation(location)
                             }

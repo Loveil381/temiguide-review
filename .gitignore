@@ -1,16 +1,17 @@
-# 编译输出
+# Build output
 /build
 app/build
 .gradle
 
-# 敏感文件
+# Sensitive files
 local.properties
 app/google-services.json
 
-# IDE
+# IDE files
 .idea
 *.iml
-
-# 系统文件
 .DS_Store
 Thumbs.db
+
+# Generated
+app/src/main/java/com/example/temiguide/BuildConfig.java

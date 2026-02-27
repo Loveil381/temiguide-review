@@ -23,7 +23,8 @@ class PatrolManager(
 ) {
     private var patrolJob: Job? = null
     private var isPatrolling: Boolean = false
-    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var supervisorJob = SupervisorJob()
+    private var coroutineScope = CoroutineScope(Dispatchers.Main + supervisorJob)
 
     // 巡回地点ごとのプロモーションメッセージ
     private val promoMessages: Map<String, String> = mapOf(
@@ -121,6 +122,20 @@ class PatrolManager(
         robot.stopMovement()
         Log.d("PatrolManager", "Patrol stopped")
         DevLog.add("Patrol", "Stopped")
+    }
+
+    /** Activity.onStop() で呼び出して全コルーチンを停止する */
+    fun destroy() {
+        stopPatrol()
+        supervisorJob.cancel()
+        Log.d("PatrolManager", "PatrolManager destroyed, all coroutines cancelled")
+    }
+
+    /** Activity.onStart() で呼び出してスコープを再構築する */
+    fun recreate() {
+        supervisorJob = SupervisorJob()
+        coroutineScope = CoroutineScope(Dispatchers.Main + supervisorJob)
+        Log.d("PatrolManager", "PatrolManager recreated")
     }
 
     fun isActive(): Boolean = isPatrolling

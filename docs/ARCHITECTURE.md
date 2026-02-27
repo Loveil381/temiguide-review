@@ -1,81 +1,93 @@
-# 技術設計書 (Architecture)
+# アーキテクチャ設計書
 
-本ドキュメントでは、`temiguide` アプリケーションの画面遷移、状態管理、AI連携フロー、および Temi SDK の利用方式について解説します。
+## 1. 全体構成
 
-## 1. 画面遷移図 (Screen Flow)
-
-単一の `MainActivity.kt` 上で、`FrameLayout` 内の各 `View` の `Visibility` を切り替えることで画面遷移を実現しています。
+Single Activity (`MainActivity.kt`) が Temi SDK の 9 つのリスナーを実装し、
+各 Handler クラスに処理を委譲する構成。
 
 ```mermaid
-stateDiagram-v2
-    [*] --> IDLE : アプリ起動
-    
-    IDLE --> GREETING : 人検知 (DetectionState)
-    IDLE --> LISTENING : 画面タップ
-    
-    GREETING --> LISTENING : 自動遷移 (4秒後)
-    
-    LISTENING --> THINKING : 音声認識完了 / APIリクエスト開始
-    LISTENING --> IDLE : ASRタイムアウト (15秒) / キャンセル
-    
-    THINKING --> GUIDANCE : AI解析結果 = action: guide
-    THINKING --> LISTENING : AI解析結果 = action: speak (再質問)
-    THINKING --> STAFF_ASSIST : AI解析結果 = action: call_staff
-    THINKING --> IDLE : AI解析結果 = action: end_conversation
-    
-    GUIDANCE --> NAVIGATION : 音声案内開始後 (2秒後)
-    
-    NAVIGATION --> ARRIVAL : goTo完了 (status: complete)
-    NAVIGATION --> IDLE : goTo中断 (status: abort) または ユーザーキャンセル
-    
-    ARRIVAL --> LISTENING : 追加のヒアリング
-    ARRIVAL --> IDLE : タイムアウト / 「もういいです」等
-    
-    STAFF_ASSIST --> IDLE : キャンセル / タイムアウト復帰
+graph TD
+    MA[MainActivity SDK Listeners] --> CH[ConversationHandler — 対話制御]
+    MA --> NH[NavigationHandler — goTo 状態管理]
+    MA --> DH[DetectionHandler — 人物検知]
+    MA --> DAH[DialogActionHandler — スタッフ呼出]
+    MA --> PM[PatrolManager — 自動巡回]
+    MA --> AH[AutonomyHandler — 自律行動制御]
+    MA --> FM[FaceManager — 顔認識]
+    MA --> SM[ScreenManager UI — 画面切替]
+    MA --> AM[AnimationManager — アニメーション]
 ```
 
-## 2. 状態管理 (State Management)
+## 2. 状態管理
 
-`MainActivity` 内の以下のフラグによって、アプリの現在の状態と重複実行の防止を管理しています。
+`StateManager` が `MutableStateFlow<AppState>` を保持し、
+`AppState.canTransitionTo()` による遷移許可マトリクスで不正遷移を防ぐ。
 
-| フラグ名 | 型 | 用途 | 変更のタイミング (Set / Reset) |
-|---|---|---|---|
-| `isListening` | Boolean | マイクによる音声入力を待機しているか | `startListening()` や `speakAndListen()` 呼び出し時に `true`。ASR完了 (`onAsrResult`)、タイムアウト時、キャンセル時に `false`。 |
-| `isGuideMode` | Boolean | AIの判定により、目的地への案内が承認された状態 | `executeAction("guide")` 時に `true`。<br>案内完了(`complete`)、中断(`abort`)、一定時間人が不在の場合に `false` にリセット。 |
-| `isNavigating` | Boolean | ロボットが物理的に移動中(`goTo` コマンド発行後)であるか | 実際の `robot.goTo()` 呼び出し直前に `true`。<br>ステータスが `complete` または `abort`、`pause` アクション時に `false`。 |
-| `isArrivalListening` | Boolean | 目的地到着後、追加の要望を聞いている特殊状態 | `handleArrival()` による着到スピーチ開始時に `true`。<br>ASR完了時、タイムアウト時、キャンセル時に `false`。 |
-| `isWelcomeSpeaking` | Boolean | 初回起動時の挨拶発話中であるか | `onRobotReady` で `true`。<br>TTS完了 (`onTtsStatusChanged: COMPLETED`) 時に `false`。 |
-| `peopleDetected` | Boolean | Temiのセンサーが人を認識しているか | `onDetectionStateChanged` の引数 `state == 1` で `true`、それ以外で `false`。 |
+### AppState 一覧
 
-> **注意**: すべての遅延実行(`postDelayed`)は `postSafely()` ラッパーを経由しており、画面破棄時やキャンセル時に未実行の `Runnable` が安全に破棄される構造になっています。
+| 状態 | 説明 | 主な遷移先 |
+|------|------|-----------|
+| Idle | 待機中 | Greeting, Listening, Autonomous, Navigating |
+| Greeting | 挨拶表示中 | Listening, Speaking |
+| Listening | ASR 待受中 | Thinking, Speaking, Idle (タイムアウト) |
+| Thinking | AI 推論中 | Speaking, Navigating, StaffCall |
+| Speaking | TTS 発話中 | Listening, Navigating |
+| Navigating | goTo 移動中 | Arrival, Idle (abort) |
+| Arrival | 目的地到着 | Listening, Idle |
+| Autonomous | 巡回中 | Listening, Idle |
+| StaffCall | スタッフ呼出中 | Idle |
+| Error | エラー | Speaking |
 
-## 3. AI連携フロー (AI Integration Flow)
+## 3. AI 推論フロー (ReAct Engine)
 
-1. **音声入力**: 対話ループ中は `robot.askQuestion()` で発話後に自動でASRを起動。純粋なASR起動のみが必要な場合は `robot.wakeup()` を使用（`JA_JP`, `EN_US`, `ZH_CN`対応）。参照: 公式Issue #427。
-2. **ASR結果受信**: `onAsrResult` コールバックで文字列を受け取る。「戻って」等の即時終了キーワードを最初に評価。
-3. **会話履歴の構築**: `conversationHistory.add()` にユーザー発話を記録し、`SYSTEM_PROMPT_TEMPLATE` に動的な JSON 形式の `locationInfo` を埋め込んで System 情報を生成。
-4. **APIリクエスト**: `Retrofit` を介して Gemini API に対してリクエストを送信。
-5. **JSON解析**: 取得した文字列フォーマットを整形 (`cleanJson()`) し、Gson で `TemiActionResponse` オブジェクトにマッピング。パース失敗時は `fallbackSpeak()` へ。
-6. **アクション実行**: `executeAction()` にて `action` の値（`guide`, `speak`, `call_staff`, `end_conversation`, `pause`）に基づき、画面遷移とロボット操作を決定。
+ユーザー発話 → ConversationHandler.processUserQuery() → ReActEngine.run() → GeminiProvider.generateWithTools() [最大 5 イテレーション] → AI が tool_call を返す → ToolRegistry で実行 → 結果を AI に返す → AI が純テキストを返す → ループ終了 → TTS 発話 (speakInChunks) → onAllSpeechComplete → robot.wakeup() → ASR 再開
 
-## 4. Temi SDK 利用箇所と注意事項
 
-- **ナビゲーション (`robot.goTo`)**
-  - 使用箇所: `executeAction("guide")` および `returnToHome()`
-  - パラメータ `noRotationAtEnd = true`: 到着時にデフォルトの向きに戻す機能を無効化し、接客に自然な角度を維持するために使用。
-  - **ガード句**: 再入防止のため、呼び出し直前に `if (isNavigating) return` の確認が必須。
-- **到着後の旋回 (`robot.turnBy`)**
-  - 使用箇所: `onGoToLocationStatusChanged` の `complete` 時。
-  - 用途: 案内完了後、お客様の方（後方180度）を向くために実行。
-- **音声認識 (`robot.askQuestion` / `robot.wakeup`)**
-  - `askQuestion()` は発話後に自動でASRを開始する、**対話ループの主要手段**（公式Issue #427推奨）。`speak()` + `wakeup()` の組み合わせはナビゲーション切替時など、発話後にASRが不要な場合に使用する。
-- **音声合成 (`robot.speak` / `TtsRequest`)**
-  - **注意**: `speakOnly()`（発話のみ・ASR不要の場合）では `isShowOnConversationLayer = false` を指定し、デフォルトのシステムUIオーバーレイを防ぐ。`askQuestion()` 使用時はSDKが内部で自動管理するため手動指定は不要。また、レスポンスJSON内の `language` フィールドをもとに動的に言語を変更。
-- **Kiosk モード**
-  - `AndroidManifest.xml` および `robot.requestToBeKioskApp()` で設定され、店舗用サイネージとしての全画面占有を実現。
+### 登録ツール
 
-## 5. アニメーション管理方式
+| ツール名 | 機能 |
+|---------|------|
+| speak | TTS 発話 |
+| navigate | goTo ナビゲーション (NavigationHandler 経由) |
+| ask_user | TTS で質問 + ASR 待受 |
+| turn | 指定角度回転 |
+| tilt_head | 頭部チルト |
+| get_available_locations | 登録地点一覧取得 |
+| call_staff | スタッフ呼出 UI 表示 |
 
-- UIのアニメーションは `ValueAnimator` と `ObjectAnimator` を用いて、プログラム側で制御されています（例：`startIdleAnimations()`, `startThinkingAnimation()`）。
-- XML側では `AnimatedVectorDrawable` (`avd_cat_concierge_idle.xml`) を使用し、猫コンシェルジュのまばたきや尻尾の動きなどの複雑なベクターアニメーションを実現しています。
-- 各画面遷移の際、`showScreen()` 内で `stopAllAnimations()` を必ず呼び出し、バックグラウンドでのアニメーション描画によるリソース浪費を防いでいます。
+## 4. 音声対話ループ
+
+Temi SDK の `wakeup()` + `onConversationStatusChanged(status=2)` パターンを採用。
+
+1. speakAndListen(text)
+2. TemiTtsProvider.speak(text) # TTS で発話
+3. TemiSttProvider.startListening() # robot.wakeup() で ASR 開始
+4. onConversationStatusChanged(status=2, text=...) # ASR 結果
+5. TemiSttProvider.markAsHandled() # 重複防止
+6. ConversationHandler.onAsrResult(text)
+
+
+**重要**: `robot.askQuestion()` は使用しない。`wakeup()` に統一。
+
+## 5. ナビゲーションフロー
+
+1. NavigateTool.execute() or DialogActionHandler
+2. navigationHandler.isNavigating = true
+3. robot.goTo(location)
+4. onGoToLocationStatusChanged()
+   - "complete" → turnBy(180°) → handleArrival()
+   - "abort" → リトライ (最大 3 回) or スタッフ呼出
+5. NavigationAwaiter.onStatusChanged() → coroutine 再開
+
+
+## 6. 巡回パトロール
+
+ScreenManager.startIdleTimer() [60秒] → PatrolManager.startPatrol() → robot.goTo(location) [ランダム順] → NavigationAwaiter.awaitArrival() → TTS プロモーション発話 → 120秒待機 → 次の地点 → 人物検知 or ASR で stopPatrol()
+
+
+## 7. 既知の制約事項
+
+- `DialogActionHandler` に旧管線の残骸 (isGuideMode 等) が残存。Phase 3 以降で整理予定
+- `AutonomyHandler` の goToLocation は NavigationHandler を経由しない
+- System Prompt が GeminiProvider と PersonaPromptBuilder の 2 箇所に存在
+- 単体テスト未整備

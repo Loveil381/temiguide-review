@@ -1,5 +1,7 @@
 package com.example.temiguide.core
 
+import com.example.temiguide.ui.ScreenManager
+
 /**
  * アプリケーション全体の状態を表現する sealed class。
  * 各 Handler は StateManager.state を collect し、自分に関係する状態変化だけ処理する。
@@ -136,27 +138,15 @@ sealed class AppState {
      * 段階的移行のため、既存の ScreenManager.showScreen(Int) との互換性を維持。
      */
     fun screenId(): Int = when (this) {
-        is Idle       -> SCREEN_IDLE
-        is Greeting   -> SCREEN_GREETING
-        is Listening  -> SCREEN_LISTENING
-        is Thinking   -> SCREEN_THINKING
-        is Speaking   -> SCREEN_LISTENING   // Speaking 中は Listening 画面を流用
-        is Navigating -> SCREEN_NAVIGATION
-        is Arrival    -> SCREEN_ARRIVAL
-        is StaffCall  -> SCREEN_STAFF
-        is Autonomous -> SCREEN_NAVIGATION  // 将来専用画面を追加
-        is Error      -> SCREEN_IDLE        // エラー時は Idle に戻す
-    }
-
-    companion object {
-        // 既存の SCREEN_* 定数（ScreenManager / MainActivity との互換用）
-        const val SCREEN_IDLE = 0
-        const val SCREEN_GREETING = 1
-        const val SCREEN_LISTENING = 2
-        const val SCREEN_THINKING = 3
-        const val SCREEN_GUIDANCE = 4
-        const val SCREEN_NAVIGATION = 5
-        const val SCREEN_ARRIVAL = 6
-        const val SCREEN_STAFF = 7
+        is Idle       -> ScreenManager.SCREEN_IDLE
+        is Greeting   -> ScreenManager.SCREEN_GREETING
+        is Listening  -> ScreenManager.SCREEN_LISTENING
+        is Thinking   -> ScreenManager.SCREEN_THINKING
+        is Speaking   -> ScreenManager.SCREEN_LISTENING   // Speaking 中は Listening 画面を流用
+        is Navigating -> ScreenManager.SCREEN_NAVIGATION
+        is Arrival    -> ScreenManager.SCREEN_ARRIVAL
+        is StaffCall  -> ScreenManager.SCREEN_STAFF
+        is Autonomous -> ScreenManager.SCREEN_NAVIGATION  // 将来専用画面を追加
+        is Error      -> ScreenManager.SCREEN_IDLE        // エラー時は Idle に戻す
     }
 }

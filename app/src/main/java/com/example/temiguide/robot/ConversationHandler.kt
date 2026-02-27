@@ -84,8 +84,15 @@ class ConversationHandler(
 
 
     fun speakAndListen(text: String) {
+        // 導航中は ASR を起動しない（wakeup が goTo を abort させるため）
+        val currentState = stateManager.getCurrentState()
+        if (currentState is AppState.Navigating || currentState is AppState.Autonomous) {
+            Log.d("TemiGuide", "speakAndListen blocked: currently in ${currentState.javaClass.simpleName}")
+            return
+        }
+        
         if (!isArrivalListening) {
-            screenManager.showScreen(MainActivity.SCREEN_LISTENING)
+            screenManager.showScreen(ScreenManager.SCREEN_LISTENING)
             activity.runOnUiThread {
                 screenManager.listeningMicPane.visibility = View.VISIBLE
                 screenManager.ivListeningMicIcon.setImageResource(R.drawable.ic_speaker)
@@ -106,12 +113,18 @@ class ConversationHandler(
         if (liveVoiceProvider?.isConnected() == true) {
             liveVoiceProvider.sendText(text)
         } else if (sttProvider is com.example.temiguide.voice.temi.TemiSttProvider) {
-            sttProvider.startListening(
-                language = "ja-JP",
-                prompt = text,
-                onResult = { res -> onAsrResult(res.text, res.language) },
-                onError = { error -> if (error == "empty_result") onAsrResult("") }
-            )
+            // 先に prompt を TTS で発話し、完了後に wakeup() で ASR を起動
+            activity.lifecycleScope.launch {
+                if (text.isNotBlank()) {
+                    ttsProvider?.speak(text)
+                }
+                sttProvider.startListening(
+                    language = "ja-JP",
+                    prompt = "",
+                    onResult = { res -> onAsrResult(res.text, res.language) },
+                    onError = { error -> if (error == "empty_result") onAsrResult("") }
+                )
+            }
         } else {
             activity.lifecycleScope.launch {
                 val success = ttsProvider?.speak(text) ?: true
@@ -143,13 +156,13 @@ class ConversationHandler(
     private fun speakErrorAndReturnToIdle() {
         speakOnly(activity.getString(R.string.msg_retry)) {
             postSafely?.invoke(200) {
-                screenManager.showScreen(MainActivity.SCREEN_IDLE)
+                screenManager.showScreen(ScreenManager.SCREEN_IDLE)
             }
         }
     }
 
     private fun speakErrorAndRetry() {
-        speakOnly("申し訳ございません、少々お待ちください。もう一度お伺いしてもよろしいでしょうか？") {
+        speakOnly(activity.getString(R.string.msg_react_retry)) {
             postSafely?.invoke(200) {
                 speakAndListen("")
             }
@@ -169,15 +182,20 @@ class ConversationHandler(
             }
             if (isListening) {
                 if (silenceLevel == 0) {
+                    val state = stateManager.getCurrentState()
+                    if (state is AppState.Navigating || state is AppState.Autonomous) {
+                        Log.d("TemiGuide", "ASR timeout speakAndListen blocked: navigating")
+                        return@launch
+                    }
                     com.example.temiguide.utils.DevLog.add("ASR", "無音タイムアウト1（15秒）")
                     silenceLevel = 1
-                    speakAndListen("何かお手伝いできることはありますか？")
+                    speakAndListen(activity.getString(R.string.msg_silence_prompt))
                 } else {
                     com.example.temiguide.utils.DevLog.add("ASR", "無音タイムアウト2（さらに15秒）")
                     silenceLevel = 0
                     isListening = false
-                    screenManager.showScreen(MainActivity.SCREEN_IDLE)
-                    speakOnly("またお声がけくださいね")
+                    screenManager.showScreen(ScreenManager.SCREEN_IDLE)
+                    speakOnly(activity.getString(R.string.msg_silence_goodbye))
                     stopAllSpeech()
                 }
             }
@@ -231,41 +249,7 @@ class ConversationHandler(
                 return@runOnUiThread
             }
 
-            if (dialogActionHandler.isQueueAskMode) {
-                dialogActionHandler.isQueueAskMode = false
-                val negativeKeywords = listOf("いいえ", "不要", "もういい", "結構", "大丈夫", "no", "not")
-                val positiveKeywords = listOf("はい", "お願い", "行く", "行きたい", "yes", "sure", "ok")
-                when {
-                    negativeKeywords.any { asrResult.contains(it, ignoreCase = true) } -> {
-                        Log.d("TemiGuide", "User rejected ask, skipping remaining actions")
-                        dialogActionHandler.cancelAll()
-                        speakOnly(activity.getString(R.string.msg_understood)) {
-                            postSafely?.invoke(200) { returnToHome?.invoke() }
-                        }
-                    }
-                    positiveKeywords.any { asrResult.contains(it, ignoreCase = true) } -> {
-                        Log.d("TemiGuide", "User accepted ask, continuing queue")
-                        if (dialogActionHandler.actionQueue?.hasNext() == true) {
-                            dialogActionHandler.pendingQueueCompletion?.invoke()
-                            dialogActionHandler.pendingQueueCompletion = null
-                        } else {
-                            Log.d("TemiGuide", "No next action, passing to LLM")
-                            dialogActionHandler.cancelAll()
-                            screenManager.showScreen(MainActivity.SCREEN_THINKING)
-                            processUserQuery(asrResult)
-                        }
-                    }
-                    else -> {
-                        Log.d("TemiGuide", "Unrecognized answer, passing to LLM")
-                        dialogActionHandler.cancelAll()
-                        screenManager.showScreen(MainActivity.SCREEN_THINKING)
-                        processUserQuery(asrResult)
-                    }
-                }
-                return@runOnUiThread
-            }
-
-            screenManager.showScreen(MainActivity.SCREEN_THINKING)
+            screenManager.showScreen(ScreenManager.SCREEN_THINKING)
         }
         
         // Parallel AI Task
@@ -330,7 +314,7 @@ class ConversationHandler(
 
                 if (result == null) {
                     com.example.temiguide.utils.DevLog.add("REACT_TIMEOUT", "ReAct loop timed out (30_000ms)")
-                    activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_IDLE) }
+                    activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_IDLE) }
                     speakErrorAndRetry()
                     return@launch
                 }
@@ -358,7 +342,7 @@ class ConversationHandler(
                 // AI 応答後、リスニング状態へ移行して次の発話を待つ（Loop Pattern）
                 Log.d("TemiGuide", "AI response spoken, transitioning to Listening for next input")
                 stateManager.transition(AppState.Listening())
-                activity.runOnUiThread { screenManager.showScreen(MainActivity.SCREEN_LISTENING) }
+                activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_LISTENING) }
                 
                 // 15秒の音声を待ち受け、何もなければ Idle へ
                 startAsrTimeout()

@@ -45,7 +45,7 @@ class DetectionHandler(
         // Show greeting when person detected on idle screen
         if (isDetected && screenManager.isIdleScreenVisible() && !dialogActionHandler.isGuideMode && !navigationHandler.isNavigating) {
             screenManager.resetIdleTimer()
-            screenManager.showScreen(MainActivity.SCREEN_GREETING)
+            screenManager.showScreen(ScreenManager.SCREEN_GREETING)
             postSafely?.invoke(4000) {
                 if (!conversationHandler.isWelcomeSpeaking) {
                     screenManager.cancelIdleTimer()

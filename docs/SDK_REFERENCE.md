@@ -26,10 +26,10 @@
 - 参照: Issue #146, #439
 
 ### askQuestion(String)
-- 質問を話した後に自動でASRを開始する、**対話ループの推奨手段**（公式Issue #427）
-- onAsrResult で結果を受け取る
-- speak + wakeup の組み合わせは「発話後にASRが不要な場面」や「ASRのみを単独で起動する場面」に限定して使用すること
-- speak + wakeup 間でTemi内蔵NLUが介入し、デフォルトメッセージが表示される既知問題あり（Issue #439、未解決）
+- 質問を話した後に自動でASRを開始する。
+- **本プロジェクトでは使用しない**。`wakeup()` + `onConversationStatusChanged(status=2)` に統一済み。
+- 理由: `askQuestion()` と `wakeup()` を混用すると SDK 内部状態が競合し、デフォルトメッセージが表示される (Issue #439)。
+- 参照: Issue #427, #439
 
 ### finishConversation()
 - 現在の会話セッションを終了する

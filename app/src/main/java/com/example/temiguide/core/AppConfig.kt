@@ -176,11 +176,13 @@ object AppConfig {
 // ==================== Enums ====================
 
 enum class AiProviderType {
-    GEMINI, OPENAI, DEEPSEEK, LOCAL;
+    GEMINI;
 
     companion object {
         fun fromString(value: String): AiProviderType =
-            entries.firstOrNull { it.name == value } ?: GEMINI
+            ProjectAiProviderTypeEntries.firstOrNull { it.name == value } ?: GEMINI
+            
+        private val ProjectAiProviderTypeEntries = entries
     }
 }
 

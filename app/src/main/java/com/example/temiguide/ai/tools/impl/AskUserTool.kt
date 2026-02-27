@@ -22,8 +22,10 @@ class AskUserTool(
         val question = args["question"] as? String ?: return ToolResult(false, "question パラメータがありません")
 
         val language = languageProvider()
+        
+        // speak で質問を読み上げる（TTS のみ）
+        // ASR の再起動は ConversationHandler の onAllSpeechComplete → robot.wakeup() が行う
         ttsProvider.speak(question, language)
-        robot.askQuestion(question) // Note: robot.askQuestion doesn't have a direct language param, uses system default
         
         return ToolResult(
             success = true,
