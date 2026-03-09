@@ -9,6 +9,7 @@ import com.example.temiguide.core.AppConstants
 import com.google.firebase.ai.type.Content
 import com.google.firebase.ai.type.content
 import kotlin.text.RegexOption
+import com.example.temiguide.ai.Message
 
 /**
  * ReAct (Reasoning + Acting) 执行引擎。
@@ -30,7 +31,12 @@ class ReActEngine(
      * @param userInput 用户的原始输入
      * @return AI 的最终回复结果
      */
-    suspend fun run(userInput: String, systemPromptOverride: String? = null, customerContext: String = ""): ReActResult {
+    suspend fun run(
+        userInput: String,
+        systemPromptOverride: String? = null,
+        customerContext: String = "",
+        existingHistory: List<Message> = emptyList()
+    ): ReActResult {
         return try {
             val fullInput = if (customerContext.isNotBlank()) {
                 "$customerContext\n\nユーザーの発言: $userInput"
@@ -48,11 +54,18 @@ class ReActEngine(
                 iterationCount++
                 DevLog.add("REACT", "Iteration $iterationCount started")
 
+                val historyContents = existingHistory.map { msg ->
+                    com.google.firebase.ai.type.content(
+                        role = if (msg.role == "assistant") "model" else msg.role
+                    ) { text(msg.content) }
+                }
+                val fullHistory = historyContents + conversationHistory
+
                 // 1. 调用 AI (增加 12 秒单次超时)
                 val response = withTimeoutOrNull(AppConstants.REACT_SINGLE_CALL_TIMEOUT_MS) {
                     geminiProvider.generateWithTools(
                         prompt = currentPrompt,
-                        conversationHistory = conversationHistory,
+                        conversationHistory = fullHistory,
                         systemPromptOverride = systemPromptOverride
                     )
                 }

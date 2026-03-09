@@ -15,8 +15,8 @@ import com.google.firebase.ai.type.Tool
 import com.google.firebase.ai.type.generationConfig
 import com.google.firebase.ai.type.content
 import com.example.temiguide.ai.tools.ToolRegistry
-// import com.google.firebase.ai.type.ThinkingLevel
-// import com.google.firebase.ai.type.thinkingConfig
+import com.google.firebase.ai.type.ThinkingLevel
+import com.google.firebase.ai.type.thinkingConfig
 
 
 /**
@@ -53,7 +53,7 @@ class GeminiProvider : AiProvider {
         systemPromptOverride: String?
     ): AiResponse {
         return try {
-            val modelName = AppConfig.modelName.ifBlank { "gemini-3-flash-preview" }
+            val modelName = AppConfig.modelName.ifBlank { "gemini-3.1-flash-lite-preview" }
             val systemInstruction = systemPromptOverride ?: buildSystemInstruction()
 
             val tools = if (functions.isEmpty()) {
@@ -66,9 +66,9 @@ class GeminiProvider : AiProvider {
             val generationConfig = generationConfig {
                 temperature = AppConfig.temperature
                 maxOutputTokens = AppConfig.maxTokens
-                // thinkingConfig = thinkingConfig {
-                //     thinkingLevel = AppConfig.getThinkingLevelEnum()
-                // }
+                thinkingConfig = thinkingConfig {
+                    thinkingLevel = AppConfig.getThinkingLevelEnum()
+                }
             }
 
             val model = Firebase.ai(backend = GenerativeBackend.googleAI())
@@ -104,7 +104,7 @@ class GeminiProvider : AiProvider {
         systemPromptOverride: String? = null
     ): GeminiToolResponse {
         return try {
-            val modelName = AppConfig.modelName.ifBlank { "gemini-3-flash-preview" }
+            val modelName = AppConfig.modelName.ifBlank { "gemini-3.1-flash-lite-preview" }
             val systemInstruction = systemPromptOverride ?: buildSystemInstruction()
 
             val toolDeclarations = toolRegistry?.toFunctionDeclarations() ?: emptyList()
@@ -117,6 +117,9 @@ class GeminiProvider : AiProvider {
             val generationConfig = generationConfig {
                 temperature = AppConfig.temperature
                 maxOutputTokens = AppConfig.maxTokens
+                thinkingConfig = thinkingConfig {
+                    thinkingLevel = AppConfig.getThinkingLevelEnum()
+                }
             }
 
             val model = Firebase.ai(backend = GenerativeBackend.googleAI())

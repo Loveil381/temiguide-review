@@ -17,4 +17,7 @@ interface InteractionLogDao {
 
     @Query("DELETE FROM interaction_logs WHERE timestamp < :before")
     suspend fun deleteBefore(before: Long)
+
+    @Query("DELETE FROM interaction_log WHERE timestamp < :threshold")
+    suspend fun deleteOlderThan(threshold: Long)
 }

@@ -25,6 +25,10 @@ object AppConfig {
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val currentModel = prefs.getString("model_name", "") ?: ""
+        if (currentModel == "gemini-2.5-flash" || currentModel == "gemini-3-flash-preview") {
+            prefs.edit().putString("model_name", "gemini-3.1-flash-lite-preview").apply()
+        }
     }
 
     // ==================== AI Provider ====================
@@ -38,7 +42,7 @@ object AppConfig {
     var apiKey: String by stringPref("api_key", BuildConfig.GEMINI_API_KEY)
 
     /** モデル名 */
-    var modelName: String by stringPref("model_name", "gemini-2.5-flash")
+    var modelName: String by stringPref("model_name", "gemini-3.1-flash-lite-preview")
 
     /** システムプロンプト（空文字の場合はデフォルトを使用） */
     var systemPrompt: String by stringPref("system_prompt", "")

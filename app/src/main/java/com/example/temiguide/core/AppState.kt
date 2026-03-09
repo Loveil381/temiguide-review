@@ -124,7 +124,7 @@ sealed class AppState {
             is Greeting   -> target is Listening || target is Speaking || target is Navigating
             is Listening  -> target is Listening || target is Thinking || target is Speaking
             is Thinking   -> target is Listening || target is Speaking || target is Navigating || target is StaffCall
-            is Speaking   -> target is Listening || target is Speaking || target is Navigating || target is StaffCall || target is Autonomous
+            is Speaking   -> target is Listening || target is Navigating || target is StaffCall
             is Navigating -> target is Speaking || target is Navigating || target is Arrival || target is Autonomous
             is Arrival    -> target is Listening || target is Speaking || target is Navigating || target is Autonomous
             is StaffCall  -> false  // StaffCall → Idle or Error のみ（上で処理済み）

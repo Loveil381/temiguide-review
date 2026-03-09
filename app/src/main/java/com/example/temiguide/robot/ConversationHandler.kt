@@ -337,7 +337,7 @@ class ConversationHandler(
                 val customerContext = faceManager?.getContextForAI() ?: ""
 
                 val result = withTimeoutOrNull(AppConstants.REACT_TOTAL_TIMEOUT_MS) {
-                    engine.run(enhancedInput, overrides, customerContext)
+                    engine.run(enhancedInput, overrides, customerContext, conversationHistory)
                 }
                 reActResult = result
 
@@ -349,6 +349,12 @@ class ConversationHandler(
                 }
 
                 consecutiveNetworkFailures = 0
+                if (result.text.isNotBlank()) {
+                    conversationHistory.add(Message(role = "assistant", content = result.text))
+                }
+                while (conversationHistory.size > 20) {
+                    conversationHistory.removeAt(0)
+                }
                 ActionLogger.logAction(activity, query, result.text, null, "ReActResponse", "Iterations: ${result.iterationCount}")
 
                 if (!result.text.isBlank() && !result.waitingForUser) {
@@ -413,6 +419,7 @@ class ConversationHandler(
 
     fun clearHistory() {
         conversationHistory.clear()
+        consecutiveNetworkFailures = 0
     }
 
     fun stopAllSpeech() {

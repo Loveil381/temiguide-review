@@ -31,7 +31,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -60,7 +61,7 @@ dependencies {
     // Retrofit & OkHttp (Removed in Phase 3)
     
     // Firebase AI Logic (replaces com.google.ai.client.generativeai)
-    implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
     implementation("com.google.firebase:firebase-ai")
     implementation("com.google.firebase:firebase-config")
 

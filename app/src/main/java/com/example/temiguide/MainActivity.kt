@@ -8,6 +8,9 @@ import android.os.Looper
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import com.example.temiguide.models.*
 import com.robotemi.sdk.Robot
@@ -165,6 +168,16 @@ class MainActivity : AppCompatActivity(),
 
         // === 基盤: Database ===
     val database = AppDatabase.getInstance(this)
+
+    lifecycleScope.launch(Dispatchers.IO) {
+        try {
+            database.interactionLogDao().deleteOlderThan(
+                System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+            )
+        } catch (e: Exception) {
+            Log.w("TemiGuide", "Failed to clean old logs", e)
+        }
+    }
 
     // === 2. Robot / UI ===
         robot = Robot.getInstance()
@@ -366,12 +379,30 @@ class MainActivity : AppCompatActivity(),
                     lastObservedState = currentState
                     lastStateChangeTime = now
                 } else {
-                    if (now - lastStateChangeTime >= AppConstants.WATCHDOG_TIMEOUT_MS) {
-                        if (currentState is AppState.Thinking) {
-                            com.example.temiguide.utils.DevLog.add("Watchdog", "AI推論が長時間(30s)停止しているためリセットします")
-                            forceResetSession()
-                            lastStateChangeTime = now
+                    val stuckMs = now - lastStateChangeTime
+                    when (currentState) {
+                        is AppState.Thinking -> {
+                            if (stuckMs >= AppConstants.WATCHDOG_TIMEOUT_MS) {
+                                com.example.temiguide.utils.DevLog.add("Watchdog", "Thinking stuck ${stuckMs}ms, resetting")
+                                forceResetSession()
+                                lastStateChangeTime = now
+                            }
                         }
+                        is AppState.Speaking -> {
+                            if (stuckMs >= 20_000L) {
+                                com.example.temiguide.utils.DevLog.add("Watchdog", "Speaking stuck ${stuckMs}ms, resetting")
+                                forceResetSession()
+                                lastStateChangeTime = now
+                            }
+                        }
+                        is AppState.Listening -> {
+                            if (stuckMs >= 60_000L && !conversationHandler.isPersonDetected) {
+                                com.example.temiguide.utils.DevLog.add("Watchdog", "Listening idle ${stuckMs}ms, no person, resetting")
+                                forceResetSession()
+                                lastStateChangeTime = now
+                            }
+                        }
+                        else -> { /* no timeout for other states */ }
                     }
                 }
                 handler.postDelayed(this, 5000)
