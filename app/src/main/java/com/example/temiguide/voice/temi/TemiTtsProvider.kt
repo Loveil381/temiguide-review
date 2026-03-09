@@ -7,10 +7,12 @@ import com.robotemi.sdk.Robot
 import com.robotemi.sdk.TtsRequest
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
 class TemiTtsProvider(private val robotController: RobotController) : TtsProvider, Robot.TtsListener {
     private var _isSpeaking = false
+    private var isChunkMode = false
     private var pendingContinuations = mutableMapOf<String, CancellableContinuation<Boolean>>()
     var onAllSpeechComplete: (() -> Unit)? = null
 
@@ -20,40 +22,54 @@ class TemiTtsProvider(private val robotController: RobotController) : TtsProvide
 
     override suspend fun speak(text: String, language: String): Boolean {
         _isSpeaking = true
-        return suspendCancellableCoroutine<Boolean> { cont ->
-            val sdkLanguage = when (language) {
-                "zh-CN" -> TtsRequest.Language.ZH_CN
-                "zh-TW" -> TtsRequest.Language.ZH_TW
-                "en-US" -> TtsRequest.Language.EN_US
-                "ja-JP" -> TtsRequest.Language.JA_JP
-                else -> TtsRequest.Language.JA_JP
+        val result = withTimeoutOrNull(15_000L) {
+            suspendCancellableCoroutine<Boolean> { cont ->
+                val sdkLanguage = when (language) {
+                    "zh-CN" -> TtsRequest.Language.ZH_CN
+                    "zh-TW" -> TtsRequest.Language.ZH_TW
+                    "en-US" -> TtsRequest.Language.EN_US
+                    "ja-JP" -> TtsRequest.Language.JA_JP
+                    else -> TtsRequest.Language.JA_JP
+                }
+                val ttsRequest = TtsRequest.create(text, isShowOnConversationLayer = false, language = sdkLanguage)
+                val id = ttsRequest.id.toString()
+
+                pendingContinuations[id] = cont
+                cont.invokeOnCancellation {
+                    pendingContinuations.remove(id)
+                    stop()
+                }
+                robotController.robot.speak(ttsRequest)
             }
-            val ttsRequest = TtsRequest.create(text, isShowOnConversationLayer = false, language = sdkLanguage)
-            val id = ttsRequest.id.toString()
-            
-            pendingContinuations[id] = cont
-            cont.invokeOnCancellation { 
-                pendingContinuations.remove(id)
-                stop() 
-            }
-            robotController.robot.speak(ttsRequest)
         }
+
+        if (result == null) {
+            stop()
+            return false
+        }
+
+        return result
     }
 
     override suspend fun speakInChunks(text: String, language: String) {
-        // 句読点で分割（。！？、で区切る。ただし短すぎる断片は結合）
-        val chunks = splitIntoChunks(text)
-        for (chunk in chunks) {
-            if (chunk.isBlank()) continue
-            speak(chunk.trim(), language)
+        isChunkMode = true
+        try {
+            val chunks = splitIntoChunks(text)
+            for (chunk in chunks) {
+                if (chunk.isBlank()) continue
+                val success = speak(chunk.trim(), language)
+                if (!success) break
+            }
+        } finally {
+            isChunkMode = false
+            _isSpeaking = false
+            onAllSpeechComplete?.invoke()
         }
     }
 
     private fun splitIntoChunks(text: String): List<String> {
-        // 。！？で分割。、は分割しない（短すぎるため）
-        val parts = text.split(Regex("(?<=[。！？])"))
-        
-        // 短すぎる断片（10文字未満）は前の断片と結合
+        val parts = text.split(Regex("(?<=[\u3002\uFF01\uFF1F])"))
+
         val result = mutableListOf<String>()
         var buffer = ""
         for (part in parts) {
@@ -78,12 +94,12 @@ class TemiTtsProvider(private val robotController: RobotController) : TtsProvide
             _isSpeaking = false
             robotController.robot.cancelAllTtsRequests()
             robotController.finishConversation()
-            
+
             val conts = pendingContinuations.values.toList()
             pendingContinuations.clear()
-            conts.forEach { 
+            conts.forEach {
                 if (it.isActive) {
-                    it.resume(false) 
+                    it.resume(false)
                 }
             }
         }
@@ -100,10 +116,10 @@ class TemiTtsProvider(private val robotController: RobotController) : TtsProvide
     override fun onTtsStatusChanged(ttsRequest: TtsRequest) {
         val id = ttsRequest.id.toString()
         val cont = pendingContinuations.remove(id)
-        
+
         when (ttsRequest.status) {
             TtsRequest.Status.COMPLETED -> {
-                if (pendingContinuations.isEmpty()) {
+                if (pendingContinuations.isEmpty() && !isChunkMode) {
                     _isSpeaking = false
                     onAllSpeechComplete?.invoke()
                 }
@@ -118,7 +134,6 @@ class TemiTtsProvider(private val robotController: RobotController) : TtsProvide
                 }
             }
             else -> {
-                // Return to map if not finished
                 if (cont != null) {
                     pendingContinuations[id] = cont
                 }
