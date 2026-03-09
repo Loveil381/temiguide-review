@@ -228,6 +228,12 @@ class ScreenManager(
             if (isNavigating) return@Runnable
             if (screenIdle.visibility != View.VISIBLE) return@Runnable
             
+            // Guard: Only start patrol if autonomy is enabled in config
+            if (!com.example.temiguide.core.AppConfig.autonomyEnabled) {
+                Log.d("TemiGuide", "Idle timeout reached, but autonomy is disabled")
+                return@Runnable
+            }
+            
             if (patrolManager?.isActive() != true) {
                 Log.d("TemiGuide", "Idle timeout reached, starting patrol")
                 patrolManager?.startPatrol()

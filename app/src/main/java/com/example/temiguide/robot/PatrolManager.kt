@@ -2,6 +2,7 @@ package com.example.temiguide.robot
 
 import android.util.Log
 import com.robotemi.sdk.Robot
+import com.example.temiguide.core.AppConfig
 import com.example.temiguide.core.AppConstants
 import com.example.temiguide.core.AppState
 import com.example.temiguide.core.StateManager
@@ -32,6 +33,7 @@ class PatrolManager(
     )
 
     fun startPatrol() {
+        if (!AppConfig.autonomyEnabled) return
         if (isPatrolling) return
         
         // ホームベース以外の登録地点を取得
@@ -46,6 +48,7 @@ class PatrolManager(
         DevLog.add("Patrol", "Started with ${locations.size} locations")
 
         patrolJob = coroutineScope.launch {
+            var consecutiveFailures = 0
             try {
                 while (isActive && isPatrolling) {
                     val shuffledLocations = locations.shuffled()
@@ -63,7 +66,10 @@ class PatrolManager(
                         Log.d("PatrolManager", "Patrol: heading to $location")
                         DevLog.add("Patrol", "Heading to $location")
                         
-                        stateManager.transition(AppState.Autonomous("巡回中: $location"))
+                        val newState = AppState.Autonomous("巡回中: $location")
+                        if (!stateManager.transition(newState)) {
+                            stateManager.forceTransition(newState)
+                        }
 
                         // 移動開始
                         navigationHandler.isNavigating = true
@@ -71,13 +77,26 @@ class PatrolManager(
                         robot.goTo(location)
                         
                         // 到着待ち
-                        val arrived = NavigationAwaiter.awaitArrival(AppConstants.NAVIGATION_TIMEOUT_MS)
+                        val arrived = NavigationAwaiter.awaitArrival(location, AppConstants.NAVIGATION_TIMEOUT_MS)
                         Log.d("TemiGuide", "Patrol: arrival result for $location = $arrived")
 
-                        if (!arrived || !isPatrolling) {
-                            Log.d("PatrolManager", "Patrol stopped or failed during movement to $location")
-                            break
+                        if (!arrived) {
+                            Log.d("PatrolManager", "Patrol: skipping $location, moving to next")
+                            DevLog.add("Patrol", "Skipped $location (arrival failed)")
+                            consecutiveFailures++
+                            if (consecutiveFailures >= 3) {
+                                Log.d("PatrolManager", "Patrol: 3 consecutive failures, stopping patrol")
+                                DevLog.add("Patrol", "Stopped: 3 consecutive failures")
+                                isPatrolling = false
+                                break
+                            }
+                            stateManager.transition(AppState.Idle)
+                            continue
                         }
+
+                        if (!isPatrolling) break
+
+                        consecutiveFailures = 0
 
                         // 到着後プロモーション発話
                         delay(AppConstants.PATROL_SPEAK_DELAY_MS)
