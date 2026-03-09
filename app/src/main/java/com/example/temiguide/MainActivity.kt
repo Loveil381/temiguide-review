@@ -449,6 +449,7 @@ class MainActivity : AppCompatActivity(),
 
         screenManager.stopClockUpdates()
         clearActionRunnables()
+        NavigationAwaiter.cancelAll()
         patrolManager.destroy()
         autonomyHandler.stopAutonomyLoop()
         watchdogRunnable?.let { handler.removeCallbacks(it) }

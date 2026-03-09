@@ -55,7 +55,7 @@ class NavigateTool(
 
         // 移動開始 & 到着待ち
         robot.goTo(resolvedLocation)
-        val arrived = NavigationAwaiter.awaitArrival(AppConstants.NAVIGATION_TIMEOUT_MS)
+        val arrived = NavigationAwaiter.awaitArrival(resolvedLocation, AppConstants.NAVIGATION_TIMEOUT_MS)
 
         return if (arrived) {
             Log.d("TemiGuide", "NavigateTool: arrived at $resolvedLocation")

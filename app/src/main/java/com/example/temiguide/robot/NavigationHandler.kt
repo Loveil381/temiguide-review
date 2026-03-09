@@ -63,6 +63,12 @@ class NavigationHandler(
                 }
             }
             "abort" -> {
+                val currentState = stateManager.state.value
+                if (currentState is AppState.Autonomous) {
+                    Log.d("TemiGuide", "Ignoring abort during Autonomous mode (PatrolManager handles it)")
+                    return
+                }
+
                 com.example.temiguide.utils.DevLog.add("Navigation", "STATUS_ABORT ($location)")
                 if (!isNavigating && !dialogActionHandler.isGuideMode && !userEndedSession) {
                     Log.d("TemiGuide", "Ignoring goTo abort - not initiated by app: $location")
