@@ -3,6 +3,7 @@ package com.example.temiguide.core
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.temiguide.R
@@ -64,7 +65,12 @@ class DevMenuActivity : AppCompatActivity() {
 
     private fun setupSwitches() {
         findViewById<Switch>(R.id.switchIdleTalk).isChecked = AppConfig.idleTalkEnabled
-        findViewById<Switch>(R.id.switchAutonomy).isChecked = AppConfig.autonomyEnabled
+        val switchPatrol = findViewById<Switch>(R.id.switchPatrol)
+        switchPatrol.isChecked = AppConfig.autonomyEnabled
+        switchPatrol.setOnCheckedChangeListener { _, isChecked ->
+            AppConfig.autonomyEnabled = isChecked
+            Log.d("DevMenu", "Autonomy/Patrol enabled: $isChecked")
+        }
     }
 
     private fun setupSeekBar() {
@@ -115,7 +121,7 @@ class DevMenuActivity : AppCompatActivity() {
         AppConfig.apiKey = findViewById<EditText>(R.id.editApiKey).text.toString()
         AppConfig.modelName = findViewById<EditText>(R.id.editModelName).text.toString()
         AppConfig.idleTalkEnabled = findViewById<Switch>(R.id.switchIdleTalk).isChecked
-        AppConfig.autonomyEnabled = findViewById<Switch>(R.id.switchAutonomy).isChecked
+        AppConfig.autonomyEnabled = findViewById<Switch>(R.id.switchPatrol).isChecked
         
         val progress = findViewById<SeekBar>(R.id.seekDetectionDistance).progress
         AppConfig.detectionDistance = 0.5f + (progress * 0.5f)
