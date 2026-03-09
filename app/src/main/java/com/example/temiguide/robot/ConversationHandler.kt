@@ -29,6 +29,10 @@ import kotlinx.coroutines.launch
 import com.example.temiguide.voice.LiveVoiceProvider
 import com.example.temiguide.voice.SttProvider
 import com.example.temiguide.voice.TtsProvider
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 
 class ConversationHandler(
     private val activity: MainActivity,
@@ -61,6 +65,7 @@ class ConversationHandler(
     private var silenceLevel = 0
     private var asrSilenceCheckJob: kotlinx.coroutines.Job? = null
     private var asrTimeoutJob: kotlinx.coroutines.Job? = null
+    private var consecutiveNetworkFailures = 0
     
     var postSafely: ((Long, () -> Unit) -> Unit)? = null
     var returnToHome: (() -> Unit)? = null
@@ -167,6 +172,30 @@ class ConversationHandler(
                 speakAndListen("")
             }
         }
+    }
+
+    private fun isNetworkException(error: Throwable): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            when (current) {
+                is UnknownHostException,
+                is SocketTimeoutException,
+                is ConnectException,
+                is SSLException -> return true
+            }
+
+            val message = current.message.orEmpty()
+            if (
+                message.contains("network", ignoreCase = true) ||
+                message.contains("timeout", ignoreCase = true) ||
+                message.contains("unable to resolve host", ignoreCase = true) ||
+                message.contains("connection reset", ignoreCase = true)
+            ) {
+                return true
+            }
+            current = current.cause
+        }
+        return false
     }
 
     private fun startAsrTimeout() {
@@ -319,29 +348,24 @@ class ConversationHandler(
                     return@launch
                 }
 
+                consecutiveNetworkFailures = 0
                 ActionLogger.logAction(activity, query, result.text, null, "ReActResponse", "Iterations: ${result.iterationCount}")
 
                 if (!result.text.isBlank() && !result.waitingForUser) {
                     stateManager.transition(AppState.Speaking(result.text))
-                    
-                    if (ttsProvider is com.example.temiguide.voice.temi.TemiTtsProvider) {
-                        ttsProvider.onAllSpeechComplete = {
-                            val state = stateManager.getCurrentState()
-                            if (state is AppState.Listening || state is AppState.Speaking) {
-                                Log.d("TemiGuide", "All TTS chunks complete, calling wakeup()")
-                                robotController.robot.wakeup()
-                            }
-                            // ★ TTS 完了直後にリスニング状態へ移行
-                            Log.d("TemiGuide", "AI response spoken, transitioning to Listening")
-                            stateManager.transition(AppState.Listening())
-                            activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_LISTENING) }
-                            isListening = true
-                            startAsrTimeout()
-                            ttsProvider.onAllSpeechComplete = null
-                        }
-                    }
-                    
                     ttsProvider?.speakInChunks(result.text, detectedLanguage)
+
+                    val state = stateManager.getCurrentState()
+                    if (state is AppState.Listening || state is AppState.Speaking) {
+                        Log.d("TemiGuide", "All TTS chunks complete, calling wakeup()")
+                        robotController.robot.wakeup()
+                    }
+
+                    Log.d("TemiGuide", "AI response spoken, transitioning to Listening")
+                    stateManager.transition(AppState.Listening())
+                    activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_LISTENING) }
+                    isListening = true
+                    startAsrTimeout()
                 }
 
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -349,7 +373,22 @@ class ConversationHandler(
             } catch (e: Exception) {
                 Log.e("TemiGuide", "Error during ReAct process: ${e.message}", e)
                 ActionLogger.logAction(activity, query, "", null, "error", "ReAct Error ${e.message}")
-                speakErrorAndReturnToIdle()
+
+                if (isNetworkException(e)) {
+                    consecutiveNetworkFailures += 1
+                    Log.w("TemiGuide", "Network failure count: $consecutiveNetworkFailures", e)
+
+                    if (consecutiveNetworkFailures >= 2) {
+                        ttsProvider?.speak(AppConstants.MSG_NO_INTERNET)
+                        stateManager.transition(AppState.Idle)
+                        activity.runOnUiThread { screenManager.showScreen(ScreenManager.SCREEN_IDLE) }
+                    } else {
+                        speakErrorAndRetry()
+                    }
+                } else {
+                    consecutiveNetworkFailures = 0
+                    speakErrorAndReturnToIdle()
+                }
             } finally {
                 val latency = System.currentTimeMillis() - startTime
                 activity.lifecycleScope.launch(Dispatchers.IO) {
